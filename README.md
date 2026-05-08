@@ -8,7 +8,7 @@
   </a>
 </p>
 <h1 align="center">
-  Medusa DTC Starter
+   IdealPrix - Tunisian E-commerce Platform
 </h1>
 
 <h4 align="center">
@@ -38,9 +38,9 @@
   </a>
 </p>
 
-# Medusa DTC Starter
+# IdealPrix E-commerce Platform
 
-A production-ready monorepo starter for direct-to-consumer ecommerce stores powered by Medusa and Next.js. Includes a fully featured storefront with product browsing, cart, checkout, customer accounts, and order management.
+A production-ready e-commerce platform for the Tunisian market powered by Medusa and Next.js. Features include product browsing, cart, checkout, customer accounts, and order management optimized for Tunisian Dinar (TND).
 
 ## Features
 
@@ -83,7 +83,7 @@ pnpm install
 cp apps/backend/.env.template apps/backend/.env
 ```
 
-3. Set the database URL in `apps/backend.env`:
+3. Set the database URL in `apps/backend/.env`:
 
 ```bash
 # Replace with actual database URL, make sure the database exists.
@@ -101,7 +101,7 @@ pnpm medusa db:migrate
 
 ```bash
 cd apps/backend
-pnpm medusa user -e admin@test.com -p supersecret
+pnpm medusa user -e admin@idealprix.tn -p Idealprix2024!
 ```
 
 6. Start Medusa backend:
@@ -134,7 +134,7 @@ pnpm dev
 
 The storefront runs on `http://localhost:8000`.
 
-You can slo run the following command from the root to start both backend and storefront:
+You can also run the following command from the root to start both backend and storefront:
 
 ```bash
 pnpm dev
@@ -148,9 +148,20 @@ The storefront is configured via environment variables in `apps/storefront/.env.
 |----------|-------------|---------|
 | `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` | Publishable API key from your Medusa backend | — |
 | `NEXT_PUBLIC_MEDUSA_BACKEND_URL` | URL of your Medusa backend | `http://localhost:9000` |
-| `NEXT_PUBLIC_DEFAULT_REGION` | Default region country code | `dk` |
+| `NEXT_PUBLIC_DEFAULT_REGION` | Default region country code | `tn` |
 | `NEXT_PUBLIC_BASE_URL` | Base URL of the storefront | `https://localhost:8000` |
 | `NEXT_PUBLIC_STRIPE_KEY` | Stripe publishable key (optional) | — |
+
+## Development
+
+### Admin Dashboard Credentials
+
+For development/testing, use these credentials:
+
+- **Email:** `admin@idealprix.tn`
+- **Password:** `Idealprix2024!`
+
+Access the admin dashboard at `http://localhost:9000/app` after starting the backend.
 
 ## Resources
 
