@@ -1,4 +1,3 @@
-// File: data/seed.ts (or wherever your seed file is located)
 import { MedusaContainer } from "@medusajs/framework";
 import {
   ContainerRegistrationKeys,
