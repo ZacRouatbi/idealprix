@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "motion/react";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -64,12 +65,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 />
               </div>
 
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 className="w-full bg-[#D4302A] text-white py-2.5 rounded-lg font-medium hover:bg-[#b82a22] transition-colors"
                 style={{ fontFamily: "Poppins, sans-serif" }}
               >
                 Se connecter
-              </button>
+              </motion.button>
             </div>
           </>
         );
@@ -129,12 +131,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 />
               </div>
 
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 className="w-full bg-[#D4302A] text-white py-2.5 rounded-lg font-medium hover:bg-[#b82a22] transition-colors"
                 style={{ fontFamily: "Poppins, sans-serif" }}
               >
                 Créer le compte
-              </button>
+              </motion.button>
             </div>
           </>
         );
@@ -168,12 +171,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 />
               </div>
 
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 className="w-full bg-[#D4302A] text-white py-2.5 rounded-lg font-medium hover:bg-[#b82a22] transition-colors"
                 style={{ fontFamily: "Poppins, sans-serif" }}
               >
                 Envoyer le lien
-              </button>
+              </motion.button>
             </div>
           </>
         );
@@ -181,12 +185,23 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
         onClick={onClose}
+        className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
       />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-8 animate-in fade-in zoom-in-95 duration-200">
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className="fixed inset-0 m-auto z-[110] h-fit w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl"
+      >
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
@@ -207,6 +222,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </svg>
         </button>
 
+        <div className="mb-5">
+          <h3 className="text-sm font-semibold text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
+            {activeTab === "login" && "Connexion"}
+            {activeTab === "register" && "Créer un compte"}
+            {activeTab === "reset" && "Réinitialiser le mot de passe"}
+          </h3>
+        </div>
+
         <div className="flex justify-center mb-6">
           <div className="flex bg-gray-100 rounded-lg p-1">
             {tabs.map((tab) => (
@@ -225,11 +248,54 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </div>
         </div>
 
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-          {renderContent()}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="mt-6 text-center text-sm">
+          {activeTab === "login" && (
+            <>
+              <button
+                onClick={() => setActiveTab("reset")}
+                className="text-[#D4302A] hover:underline mr-4"
+              >
+                Mot de passe oublié ?
+              </button>
+              <button
+                onClick={() => setActiveTab("register")}
+                className="text-[#D4302A] hover:underline"
+              >
+                Pas de compte ? S'inscrire
+              </button>
+            </>
+          )}
+          {activeTab === "register" && (
+            <button
+              onClick={() => setActiveTab("login")}
+              className="text-[#D4302A] hover:underline"
+            >
+              Déjà un compte ? Se connecter
+            </button>
+          )}
+          {activeTab === "reset" && (
+            <button
+              onClick={() => setActiveTab("login")}
+              className="text-[#D4302A] hover:underline"
+            >
+              Retour à la connexion
+            </button>
+          )}
         </div>
-      </div>
-    </div>,
+      </motion.div>
+    </>,
     document.body
   );
 }
