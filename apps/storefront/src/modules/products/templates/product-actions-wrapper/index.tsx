@@ -1,25 +1,15 @@
-import { listProducts } from "@lib/data/products"
-import { HttpTypes } from "@medusajs/types"
-import ProductActions from "@modules/products/components/product-actions"
+import { products } from "@lib/data/products";
+import ProductActions from "@modules/products/components/product-actions";
 
 /**
- * Fetches real time pricing for a product and renders the product actions component.
+ * Displays product actions for a product by handle.
  */
-export default async function ProductActionsWrapper({
-  id,
-  region,
-}: {
-  id: string
-  region: HttpTypes.StoreRegion
-}) {
-  const product = await listProducts({
-    queryParams: { id: [id] },
-    regionId: region.id,
-  }).then(({ response }) => response.products[0])
+export default function ProductActionsWrapper({ handle }: { handle: string }) {
+  const product = products.find((p) => p.handle === handle);
 
   if (!product) {
-    return null
+    return null;
   }
 
-  return <ProductActions product={product} region={region} />
+  return <ProductActions product={product} />;
 }

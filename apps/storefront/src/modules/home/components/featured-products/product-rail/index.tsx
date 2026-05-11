@@ -1,47 +1,31 @@
-import { listProducts } from "@lib/data/products"
-import { HttpTypes } from "@medusajs/types"
-import { Text } from "@modules/common/components/ui"
+import { products } from "@lib/data/products"
 
-import InteractiveLink from "@modules/common/components/interactive-link"
-import ProductPreview from "@modules/products/components/product-preview"
-
-export default async function ProductRail({
+export default function ProductRail({
   collection,
-  region,
 }: {
-  collection: HttpTypes.StoreCollection
-  region: HttpTypes.StoreRegion
+  collection: { title: string; handle: string; id: string }
 }) {
-  const {
-    response: { products: pricedProducts },
-  } = await listProducts({
-    regionId: region.id,
-    queryParams: {
-      collection_id: collection.id,
-      fields: "*variants.calculated_price",
-    },
-  })
+  const featuredProducts = products.slice(0, 4);
 
-  if (!pricedProducts) {
-    return null
+  if (!featuredProducts) {
+    return null;
   }
 
   return (
     <div className="content-container py-12 small:py-24">
       <div className="flex justify-between mb-8">
-        <Text className="txt-xlarge">{collection.title}</Text>
-        <InteractiveLink href={`/collections/${collection.handle}`}>
-          View all
-        </InteractiveLink>
+        <h2 className="text-xl font-semibold text-gray-900">{collection.title}</h2>
       </div>
       <ul className="grid grid-cols-2 small:grid-cols-3 gap-x-6 gap-y-24 small:gap-y-36">
-        {pricedProducts &&
-          pricedProducts.map((product) => (
+        {featuredProducts &&
+          featuredProducts.map((product) => (
             <li key={product.id}>
-              <ProductPreview product={product} region={region} isFeatured />
+              <a href={`/products/${product.handle}`} className="text-gray-700 hover:text-[#D4302A]">
+                {product.title}
+              </a>
             </li>
           ))}
       </ul>
     </div>
-  )
+  );
 }

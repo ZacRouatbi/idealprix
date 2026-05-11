@@ -1,0 +1,17 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Idealprix Global Overrides */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #F9F8F7;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+}
+
+input, textarea, select {
+  font-family: 'Inter', sans-serif;
+}
