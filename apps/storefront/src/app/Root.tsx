@@ -11,7 +11,7 @@ export default function Root() {
   }, [location.key]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F0F3FA]">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="flex-1">
         <Outlet />
