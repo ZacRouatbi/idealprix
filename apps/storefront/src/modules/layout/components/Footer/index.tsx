@@ -1,8 +1,8 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#1E212B] border-t border-gray-200">
+    <footer className="bg-[#D4302A] border-t border-gray-200">
       <div className="content-container mx-auto px-4 pb-8 pt-10">
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-8 items-start">
           
@@ -10,7 +10,7 @@ export default function Footer() {
           <div >
             <Link to="/" className="inline-block -mt-2px">
               <img
-                src="/Idealprixlogo.png"
+                src="/Logowhite.png"
                 alt="IdealPrix"
                 className="h-10 w-auto"
               />
@@ -22,20 +22,20 @@ export default function Footer() {
 
           {/* Column 2 – Quick links */}
           <div>
-            <h4 className="font-medium text-white mb-4 mt-5">Liens rapides</h4>   {/* mt-0 kills browser margin */}
+            <h4 className="font-medium text-white mb-4 mt-5">Liens rapides</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="/" className="text-white hover:text-[#D4302A] transition-colors">
+                <a href="/" className="text-white hover:text-gray-200 transition-colors">
                   Accueil
                 </a>
               </li>
               <li>
-                <a href="/products" className="text-white hover:text-[#D4302A] transition-colors">
+                <a href="/products" className="text-white hover:text-gray-200 transition-colors">
                   Produits
                 </a>
               </li>
               <li>
-                <a href="/cart" className="text-white hover:text-[#D4302A] transition-colors">
+                <a href="/cart" className="text-white hover:text-gray-200 transition-colors">
                   Panier
                 </a>
               </li>
@@ -44,8 +44,9 @@ export default function Footer() {
 
           {/* Column 3 – Contact */}
           <div>
-            <h4 className="font-medium text-white mb-4 mt-5">Contact</h4>         
+            <h4 className="font-medium text-white mb-4 mt-5">Contact</h4>
             <p className="text-white text-sm">contact@idealprix.com</p>
+            <p className="text-white text-sm">+216 58 246 553</p>
           </div>
         </div>
 

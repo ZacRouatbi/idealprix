@@ -1,7 +1,7 @@
 "use client"
 import { RadioGroup } from "@headlessui/react"
 import { isStripeLike, paymentInfoMap } from "@lib/constants"
-import { initiatePaymentSession } from "@lib/data/cart"
+import { initiatePaymentSession, retrieveCart } from "@lib/data/cart"
 import { CheckCircleSolid, CreditCard } from "@medusajs/icons"
 import ErrorMessage from "@modules/checkout/components/error-message"
 import PaymentContainer, {
@@ -16,7 +16,7 @@ import {
   clx,
 } from "@modules/common/components/ui"
 import { HttpTypes } from "@medusajs/types"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useLocation, useNavigate, useSearchParams } from "react-router"
 import { useCallback, useEffect, useState } from "react"
 
 const Payment = ({
@@ -30,6 +30,7 @@ const Payment = ({
     (paymentSession) => paymentSession.status === "pending"
   )
 
+  const [cartState, setCartState] = useState(cart)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cardBrand, setCardBrand] = useState<string | null>(null)
@@ -38,9 +39,9 @@ const Payment = ({
     activeSession?.provider_id ?? ""
   )
 
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const location = useLocation()
 
   const isOpen = searchParams.get("step") === "payment"
 
@@ -51,6 +52,10 @@ const Payment = ({
       await initiatePaymentSession(cart, {
         provider_id: method,
       })
+      const updatedCart = await retrieveCart()
+      if (updatedCart) {
+        setCartState(updatedCart)
+      }
     }
   }
 
@@ -58,8 +63,12 @@ const Payment = ({
     (cart as unknown as Record<string, unknown>)?.gift_cards && ((cart as unknown as Record<string, unknown>)?.gift_cards as unknown[])?.length > 0 && cart?.total === 0
   )
 
+  const currentSession = cartState.payment_collection?.payment_sessions?.find(
+    (paymentSession) => paymentSession.status === "pending"
+  )
+
   const paymentReady =
-    (activeSession && (cart?.shipping_methods?.length ?? 0) !== 0) || paidByGiftcard
+    (currentSession && (cartState?.shipping_methods?.length ?? 0) !== 0) || paidByGiftcard
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -72,33 +81,30 @@ const Payment = ({
   )
 
   const handleEdit = () => {
-    router.push(pathname + "?" + createQueryString("step", "payment"), {
-      scroll: false,
-    })
+    navigate({ search: createQueryString("step", "payment") }, { preventScrollReset: true })
   }
 
   const handleSubmit = async () => {
     setIsLoading(true)
     try {
       const shouldInputCard =
-        isStripeLike(selectedPaymentMethod) && !activeSession
+        isStripeLike(selectedPaymentMethod) && !currentSession
 
       const checkActiveSession =
-        activeSession?.provider_id === selectedPaymentMethod
+        currentSession?.provider_id === selectedPaymentMethod
 
       if (!checkActiveSession) {
-        await initiatePaymentSession(cart, {
+        await initiatePaymentSession(cartState, {
           provider_id: selectedPaymentMethod,
         })
+        const updatedCart = await retrieveCart()
+        if (updatedCart) {
+          setCartState(updatedCart)
+        }
       }
 
       if (!shouldInputCard) {
-        return router.push(
-          pathname + "?" + createQueryString("step", "review"),
-          {
-            scroll: false,
-          }
-        )
+        return navigate({ search: createQueryString("step", "review") }, { preventScrollReset: true })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -201,14 +207,14 @@ const Payment = ({
             }
             data-testid="submit-payment-button"
           >
-            {!activeSession && isStripeLike(selectedPaymentMethod)
+            {isStripeLike(selectedPaymentMethod) && !currentSession
               ? " Enter card details"
               : "Continue to review"}
           </Button>
         </div>
 
         <div className={isOpen ? "hidden" : "block"}>
-          {cart && paymentReady && activeSession ? (
+          {cartState && paymentReady && currentSession ? (
             <div className="flex items-start gap-x-1 w-full">
               <div className="flex flex-col w-1/3">
                 <Text className="txt-medium-plus text-ui-fg-base mb-1">
@@ -218,8 +224,8 @@ const Payment = ({
                   className="txt-medium text-ui-fg-subtle"
                   data-testid="payment-method-summary"
                 >
-                  {paymentInfoMap[activeSession?.provider_id]?.title ||
-                    activeSession?.provider_id}
+                  {paymentInfoMap[currentSession?.provider_id]?.title ||
+                    currentSession?.provider_id}
                 </Text>
               </div>
               <div className="flex flex-col w-1/3">

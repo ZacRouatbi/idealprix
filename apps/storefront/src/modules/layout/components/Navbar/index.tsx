@@ -242,7 +242,7 @@ export default function Navbar() {
               Tous les produits
             </NavLink>
             <NavLink
-              to="/products?category=produits-de-nettoyage"
+              to="/products?category=nettoyage"
               className="text-gray-600 hover:text-[#D4302A] mr-6"
             >
               Nettoyage

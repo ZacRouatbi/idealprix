@@ -20,13 +20,11 @@ const StripeWrapper: React.FC<StripeWrapperProps> = ({
   stripePromise,
   children,
 }) => {
-  const options: StripeElementsOptions = {
-    clientSecret: paymentSession!.data?.client_secret as string | undefined,
-  }
+  const clientSecret = paymentSession?.data?.client_secret as string | undefined
 
   if (!stripeKey) {
     throw new Error(
-      "Stripe key is missing. Set NEXT_PUBLIC_STRIPE_KEY environment variable."
+      "Stripe key is missing. Set NEXT_PUBLIC_STRIPE_KEY or VITE_STRIPE_KEY environment variable."
     )
   }
 
@@ -36,10 +34,12 @@ const StripeWrapper: React.FC<StripeWrapperProps> = ({
     )
   }
 
-  if (!paymentSession?.data?.client_secret) {
-    throw new Error(
-      "Stripe client secret is missing. Cannot initialize Stripe."
-    )
+  if (!clientSecret) {
+    return <>{children}</>
+  }
+
+  const options: StripeElementsOptions = {
+    clientSecret,
   }
 
   return (

@@ -1,3 +1,5 @@
+"use client"
+
 import { listCartShippingMethods } from "@lib/data/fulfillment"
 import { listCartPaymentMethods } from "@lib/data/payment"
 import { HttpTypes } from "@medusajs/types"
@@ -5,20 +7,28 @@ import Addresses from "@modules/checkout/components/addresses"
 import Payment from "@modules/checkout/components/payment"
 import Review from "@modules/checkout/components/review"
 import Shipping from "@modules/checkout/components/shipping"
+import { useEffect, useState } from "react"
 
-export default async function CheckoutForm({
+export default function CheckoutForm({
   cart,
   customer,
 }: {
   cart: HttpTypes.StoreCart | null
   customer: HttpTypes.StoreCustomer | null
 }) {
+  const [shippingMethods, setShippingMethods] = useState<HttpTypes.StoreCartShippingOption[] | null>(null)
+  const [paymentMethods, setPaymentMethods] = useState<{ id: string }[] | null>(null)
+
+  useEffect(() => {
+    if (cart) {
+      listCartShippingMethods(cart.id).then(setShippingMethods)
+      listCartPaymentMethods(cart.region?.id ?? "").then(setPaymentMethods)
+    }
+  }, [cart])
+
   if (!cart) {
     return null
   }
-
-  const shippingMethods = await listCartShippingMethods(cart.id)
-  const paymentMethods = await listCartPaymentMethods(cart.region?.id ?? "")
 
   if (!shippingMethods || !paymentMethods) {
     return null
