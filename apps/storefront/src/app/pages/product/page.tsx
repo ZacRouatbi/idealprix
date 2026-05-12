@@ -127,9 +127,9 @@ export default function ProductPage() {
         </nav>
 
         {/* Product Layout */}
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 lg:max-w-5xl mx-auto">
           {/* Images */}
-          <div className="flex-1 lg:max-w-lg">
+          <div className="flex-1 max-w-xl">
             {/* Main Image */}
             <div className="relative bg-white rounded-2xl overflow-hidden border border-[#E5E5E5] mb-3">
               {product.isPromo && (
@@ -199,7 +199,7 @@ export default function ProductPage() {
           </div>
 
           {/* Product Info */}
-          <div className="flex-1 max-w-lg">
+          <div className="flex-1 max-w-xl">
             <div className="bg-white rounded-2xl p-6 border border-[#E5E5E5]">
               {/* Brand & Category */}
               <div className="flex items-center gap-2 mb-2">
@@ -374,7 +374,7 @@ export default function ProductPage() {
         </div>
 
         {/* Accordions */}
-        <div className="mt-8 bg-white rounded-2xl border border-[#E5E5E5] p-6 max-w-2xl">
+        <div className="mt-8 bg-white rounded-2xl border border-[#E5E5E5] p-6 max-w-2xl mx-auto">
           <AccordionSection id="description" title="Description">
             <p>
               {product.description ||
@@ -406,7 +406,7 @@ export default function ProductPage() {
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="mt-10">
+          <div className="mt-10 max-w-2xl mx-auto">
             <h2
               className="text-[#1E1E1E] mb-5"
               style={{
@@ -417,7 +417,7 @@ export default function ProductPage() {
             >
               Produits similaires
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {relatedProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}

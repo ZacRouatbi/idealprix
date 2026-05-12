@@ -10,7 +10,7 @@ export default function HomePage() {
 return (
     <main style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Hero Banner */}
-       <section className="relative overflow-hidden bg-[#8D99AF]">
+       <section className="relative overflow-hidden bg-[#1E212B]">
          <div className="max-w-7xl mx-auto px-4 py-12 lg:py-16 flex flex-col lg:flex-row items-center gap-8">
            {/* Text */}
            <div className="flex-1 text-center lg:text-left">
