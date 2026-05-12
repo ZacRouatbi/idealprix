@@ -5,6 +5,7 @@ import StorePage from "./pages/store/page";
 import ProductPage from "./pages/product/page";
 import CartPage from "./pages/cart/page";
 import CheckoutPage from "./pages/checkout/page";
+import AccountDashboardPage from "./pages/account/page";
 
 function NotFound() {
   return (
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { path: "products/:handle", Component: ProductPage },
       { path: "cart", Component: CartPage },
       { path: "checkout", Component: CheckoutPage },
+      { path: "account", Component: AccountDashboardPage },
       { path: "*", Component: NotFound },
     ],
   },

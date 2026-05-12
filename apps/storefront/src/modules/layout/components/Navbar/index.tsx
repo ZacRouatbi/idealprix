@@ -1,14 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { User, ShoppingCart, Search } from "lucide-react";
+import { User, ShoppingCart, Search, LogOut } from "lucide-react";
 import { useCart } from "@lib/context/CartContext";
+import { useAuth } from "@lib/context/AuthContext";
 import AuthModal from "../AuthModal";
+
+const PUBLISHABLE_KEY = import.meta.env.VITE_MEDUSA_PUBLISHABLE_KEY || "";
 
 export default function Navbar() {
   const { cart, totalItems } = useCart();
+  const { token, customer, checkAuth, logout } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const isLoggedIn = !!token;
+
+  const handleAuthSuccess = () => {
+    checkAuth();
+  };
+
+  const handleAccountClick = () => {
+    if (isLoggedIn) {
+      navigate("/account");
+    } else {
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,12 +97,23 @@ export default function Navbar() {
             <div className="flex items-center gap-x-3 h-full justify-end flex-1">
               {/* Account Icon */}
               <button
-                onClick={() => setShowAuthModal(true)}
+                onClick={handleAccountClick}
                 className="p-2 text-gray-600 hover:text-[#D4302A] hover:bg-gray-100 rounded-full transition-all duration-200"
                 aria-label="Account"
               >
                 <User className="w-6 h-6" />
               </button>
+
+              {/* Logout Icon - only shown when logged in */}
+              {isLoggedIn && (
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-gray-600 hover:text-[#D4302A] hover:bg-gray-100 rounded-full transition-all duration-200"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-6 h-6" />
+                </button>
+              )}
 
               {/* Cart */}
               <Link
@@ -146,7 +180,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />
     </>
   );
 }
