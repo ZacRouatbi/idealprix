@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { User, ShoppingCart, Search, LogOut } from "lucide-react";
+import { User, ShoppingCart, Search, LogOut, X } from "lucide-react";
 import { useCart } from "@lib/context/CartContext";
 import { useAuth } from "@lib/context/AuthContext";
 import AuthModal from "../AuthModal";
-
-const PUBLISHABLE_KEY = import.meta.env.VITE_MEDUSA_PUBLISHABLE_KEY || "";
+import { products, formatPrice, Product } from "@lib/data/products";
 
 export default function Navbar() {
   const { cart, totalItems } = useCart();
@@ -13,32 +12,59 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const isLoggedIn = !!token;
 
-  const handleAuthSuccess = () => {
-    checkAuth();
-  };
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return products
+      .filter((p) => p.title.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [searchQuery]);
 
-  const handleAccountClick = () => {
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleAuthSuccess = useCallback(() => checkAuth(), [checkAuth]);
+
+  const handleAccountClick = useCallback(() => {
     if (isLoggedIn) {
       navigate("/account");
     } else {
       setShowAuthModal(true);
     }
-  };
+  }, [isLoggedIn, navigate]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout();
     navigate("/");
-  };
+  }, [logout, navigate]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
+  const handleProductClick = useCallback(() => {
+    setShowSearchResults(false);
+    setSearchQuery("");
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    setShowSearchResults(false);
+  }, []);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSearchResults(value.trim().length > 0);
+  }, []);
 
   return (
     <>
@@ -80,18 +106,81 @@ export default function Navbar() {
             </div>
 
             {/* Center: Search Bar - hidden on mobile */}
-            <form onSubmit={handleSearch} className="hidden md:block">
+            <div className="hidden md:block relative" ref={searchRef}>
               <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 lg:w-80 pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#D4302A] bg-gray-50"
-                />
+<input
+                          type="text"
+                          placeholder="Rechercher..."
+                          value={searchQuery}
+                          onChange={handleInputChange}
+                          onFocus={() => searchQuery && setShowSearchResults(true)}
+                          className="w-64 lg:w-80 pl-9 pr-8 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#D4302A] bg-gray-50"
+                        />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                {searchQuery && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-            </form>
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && (
+                <div className="absolute top-full left-0 mt-2 w-80 lg:w-96 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+                  {filteredProducts.length > 0 ? (
+                    <>
+                      <div className="p-2 border-b border-gray-100">
+                        <p className="text-xs text-gray-500">
+                          {filteredProducts.length} produit{filteredProducts.length > 1 ? "s" : ""} trouvé{filteredProducts.length > 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      {filteredProducts.map((product: Product) => (
+                        <Link
+                          key={product.id}
+                          to={`/products/${product.handle}`}
+                          onClick={handleProductClick}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+                        >
+                          <img
+                            src={product.image}
+                            alt={product.title}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                              {product.title}
+                            </h4>
+                            <p className="text-xs text-gray-500">{product.brand}</p>
+                            <p className="text-sm font-bold text-[#D4302A]">
+                              {formatPrice(product.price)}
+                            </p>
+                          </div>
+                          {product.isPromo && (
+                            <span className="bg-[#D4302A] text-white text-xs px-1.5 py-0.5 rounded">
+                              -{product.discountPercent}%
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+                      <Link
+                        to={`/products?q=${encodeURIComponent(searchQuery)}`}
+                        onClick={handleProductClick}
+                        className="block p-3 text-center text-sm text-[#D4302A] font-medium hover:bg-gray-50 border-t border-gray-100"
+                      >
+                        Voir tous les résultats
+                      </Link>
+                    </>
+                  ) : (
+                    <div className="p-4 text-center">
+                      <p className="text-sm text-gray-500">Aucun produit trouvé</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Right: Account, Cart */}
             <div className="flex items-center gap-x-3 h-full justify-end flex-1">

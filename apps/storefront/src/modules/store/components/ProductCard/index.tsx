@@ -11,19 +11,18 @@ export default function ProductCard({ product }: ProductCardProps) {
       to={`/products/${product.handle}`}
       className="group block bg-white rounded-xl border border-[#E5E5E5] hover:shadow-md transition-shadow duration-200"
     >
-      <div className="aspect-square bg-[#F9F8F7] rounded-t-xl overflow-hidden">
+      <div className="aspect-square bg-[#F9F8F7] rounded-t-xl overflow-hidden relative">
         <img
           src={product.image}
           alt={product.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
+        {product.isPromo && (
+          <div className="absolute top-2 left-2 bg-[#D4302A] text-white text-xs font-bold px-2 py-0.5 rounded">
+            -{product.discountPercent}%
+          </div>
+        )}
       </div>
-
-      {product.isPromo && (
-        <div className="absolute top-2 left-2 bg-[#D4302A] text-white text-xs font-bold px-2 py-0.5 rounded">
-          -{product.discountPercent}%
-        </div>
-      )}
 
       <div className="p-3">
         <h3
