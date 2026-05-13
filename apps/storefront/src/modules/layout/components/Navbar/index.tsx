@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { User, ShoppingCart, Search, LogOut, X } from "lucide-react";
+import { User, ShoppingCart, Search, LogOut, X, MapPin } from "lucide-react";
 import { useCart } from "@lib/context/CartContext";
 import { useAuth } from "@lib/context/AuthContext";
 import AuthModal from "../AuthModal";
@@ -53,7 +53,7 @@ export default function Navbar() {
 
   const handleProductClick = useCallback(() => {
     setShowSearchResults(false);
-    setSearchQuery("");
+    setQuery("");
   }, []);
 
   const clearSearch = () => {
@@ -185,6 +185,16 @@ export default function Navbar() {
 
             {/* Right: Account, Cart */}
             <div className="flex items-center gap-x-3 h-full justify-end flex-1">
+              {/* Stores Icon */}
+              <Link
+                to="/stores"
+                className="p-2 text-gray-600 hover:text-[#D4302A] hover:bg-gray-100 rounded-full transition-all duration-200"
+                aria-label="Nos magasins"
+                title="Nos magasins"
+              >
+                <MapPin className="w-6 h-6" />
+              </Link>
+
               {/* Account Icon */}
               <button
                 onClick={handleAccountClick}
