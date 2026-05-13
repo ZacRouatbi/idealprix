@@ -4,6 +4,7 @@ import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle } fr
 import { formatPrice } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
+import { fetchProducts, fetchCategories, medusaFetch } from "../../../lib/data/medusa";
 import ProductCard from "../../../modules/store/components/ProductCard";
 import FilterSidebar from "../../../modules/store/components/FilterSidebar";
 
@@ -44,12 +45,51 @@ export default function StorePage() {
     setFilters((prev) => ({ ...prev, promoOnly: searchParams.get("promo") === "true" }));
   }, [searchParams]);
 
+  const { subcategories: backendSubcategories } = useCategories(6, categoryParam || undefined);
+
+  // Build subcategory ID map for filtering
+  const [subcategoryIds, setSubcategoryIds] = useState<Record<string, string[]>>({});
+  
+  useEffect(() => {
+    fetchCategories().then((cats) => {
+      const idMap: Record<string, string[]> = {};
+      for (const cat of cats) {
+        const parent = cat.parent_category_id || cat.parent_id;
+        if (parent) {
+          if (!idMap[parent]) idMap[parent] = [];
+          idMap[parent].push(cat.id);
+        }
+      }
+      setSubcategoryIds(idMap);
+    });
+  }, []);
+
+  // Get all category IDs (parent + subcategories) when categoryParam is a parent
+  const [allCategoryIds, setAllCategoryIds] = useState<string[]>([]);
+  
+  useEffect(() => {
+    if (!categoryParam) {
+      setAllCategoryIds([]);
+      return;
+    }
+    // Get category ID from handle
+    medusaFetch<{ product_categories: { id: string; handle: string }[] }>(
+      `/store/product-categories?handle[]=${categoryParam}&fields=id,handle`
+    ).then((res) => {
+      const cat = res.product_categories?.[0];
+      if (cat) {
+        const childIds = subcategoryIds[cat.id] || [];
+        setAllCategoryIds([cat.id, ...childIds]);
+      } else {
+        setAllCategoryIds([]);
+      }
+    }).catch(() => setAllCategoryIds([]));
+  }, [categoryParam, subcategoryIds]);
+
   const { products, loading, error } = useProducts({
     limit: 100,
-    ...(categoryParam ? { category_handle: [categoryParam] } : {}),
+    ...(allCategoryIds.length > 0 ? { category_id: allCategoryIds } : categoryParam ? { category_handle: [categoryParam] } : {}),
   });
-
-  const { subcategories: backendSubcategories } = useCategories(6, categoryParam || undefined);
 
   const pageTitle = useMemo(() => {
     if (promoParam === "true") return "Promotions";
@@ -87,9 +127,14 @@ export default function StorePage() {
     }
 
     if (filters.subcategories.length > 0) {
-      result = result.filter(
-        (p) => p.subcategory && filters.subcategories.includes(p.subcategory)
-      );
+      // Check if product has ANY of the selected subcategories in its categories
+      result = result.filter((p) => {
+        // Check subcategory field AND if the product's main category matches a subcategory
+        if (p.subcategory && filters.subcategories.includes(p.subcategory)) return true;
+        // Also check if the category itself matches (for direct subcategory pages)
+        if (p.category && filters.subcategories.includes(p.category)) return true;
+        return false;
+      });
     }
 
     if (filters.brands.length > 0) {

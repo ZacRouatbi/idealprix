@@ -3,6 +3,8 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { formatPrice, HERO_IMAGE } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
+import { fetchProducts, fetchCategories } from "../../../lib/data/medusa";
+import { useEffect, useState } from "react";
 import ProductCard from "../../../modules/store/components/ProductCard";
 
 export default function HomePage() {
@@ -12,21 +14,53 @@ export default function HomePage() {
   const popularProducts = products.filter((p) => p.inStock).slice(0, 4);
   const promoProducts = products.filter((p) => p.isPromo).slice(0, 4);
 
-  // Count products per category
-  const productCounts = products.reduce<Record<string, number>>((acc, p) => {
-    if (p.category) {
-      acc[p.category] = (acc[p.category] || 0) + 1;
-    }
-    return acc;
-  }, {});
+  // Fetch product counts per category (including subcategories)
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [countsLoading, setCountsLoading] = useState(true);
+  const [allCategoryIds, setAllCategoryIds] = useState<Record<string, string[]>>({});
 
-  // Enrich categories with product counts
+  useEffect(() => {
+    fetchCategories().then((cats) => {
+      const idMap: Record<string, string[]> = {};
+      for (const cat of cats) {
+        const parent = cat.parent_category_id || cat.parent_id;
+        if (parent) {
+          if (!idMap[parent]) idMap[parent] = [];
+          idMap[parent].push(cat.id);
+        }
+      }
+      setAllCategoryIds(idMap);
+    });
+  }, []);
+
+  useEffect(() => {
+    async function fetchCounts() {
+      const countMap: Record<string, number> = {};
+      for (const cat of categories) {
+        try {
+          // Get all category IDs for this parent (including subcategories)
+          const childIds = allCategoryIds[cat.id] || [];
+          const allIds = [cat.id, ...childIds];
+          
+          // Query products for this category or its subcategories
+          const res = await fetchProducts({ category_id: allIds, limit: 1 });
+          countMap[cat.handle] = res.count || 0;
+        } catch {
+          countMap[cat.handle] = 0;
+        }
+      }
+      setCounts(countMap);
+      setCountsLoading(false);
+    }
+    if (categories.length > 0) fetchCounts();
+  }, [categories, allCategoryIds]);
+
   const enrichedCategories = categories.map((cat) => ({
     id: cat.id,
     title: cat.name,
     handle: cat.handle,
     image: cat.image?.url || HERO_IMAGE,
-    count: productCounts[cat.name] || 0,
+    count: counts[cat.handle] || 0,
   }));
  
   return (
@@ -59,7 +93,7 @@ export default function HomePage() {
       </section>
  
 {/* Categories */}
-      {!categoriesLoading && enrichedCategories.length > 0 && (
+      {!categoriesLoading && !countsLoading && enrichedCategories.length > 0 && (
         <section className="bg-[#F0F3FA] w-full">
           <div className="max-w-7xl mx-auto px-4 py-10">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -106,6 +106,7 @@ export async function fetchProducts(params: {
   limit?: number;
   offset?: number;
   category_handle?: string | string[];   // <-- now supported
+  category_id?: string | string[];       // <-- added for direct category ID filtering
   handle?: string;
   region_id?: string;
 } = {}): Promise<MedusaListResponse> {
@@ -120,6 +121,14 @@ export async function fetchProducts(params: {
     const handles = Array.isArray(params.category_handle) ? params.category_handle : [params.category_handle];
     const categoryIds = await getCategoryIdsByHandles(handles);
     for (const id of categoryIds) {
+      qs.append("category_id[]", id);
+    }
+  }
+
+  // Direct category_id filtering (for including subcategories)
+  if (params.category_id) {
+    const ids = Array.isArray(params.category_id) ? params.category_id : [params.category_id];
+    for (const id of ids) {
       qs.append("category_id[]", id);
     }
   }
@@ -204,7 +213,16 @@ export function normaliseProduct(p: MedusaProduct): Product {
   const calculatedPrice = firstVariant?.calculated_price?.calculated_amount ?? firstPrice;
   const thumbnail = p.thumbnail || p.images?.[0]?.url || "";
   const allImages = p.images?.map((i) => i.url).filter(Boolean) ?? (thumbnail ? [thumbnail] : []);
-  const category = p.categories?.[0]?.name ?? p.collection?.title ?? "Général";
+  
+  // Determine main category and subcategory:
+  // - Main category = first category that has no parent (or first category if none have parent)
+  // - Subcategory = first category that has a parent_id
+  const cats = p.categories || [];
+  const parentCategory = cats.find(c => !c.parent_category_id && !c.parent_id);
+  const childCategory = cats.find(c => c.parent_category_id || c.parent_id);
+  const category = parentCategory?.name ?? cats[0]?.name ?? p.collection?.title ?? "Général";
+  const subcategory = childCategory?.name ?? (cats[1]?.name || undefined);
+  
   const inStock =
     firstVariant?.inventory_quantity === undefined ||
     (firstVariant?.inventory_quantity ?? 1) > 0;
@@ -228,6 +246,7 @@ export function normaliseProduct(p: MedusaProduct): Product {
     image: thumbnail,
     images: allImages.length > 0 ? allImages : [thumbnail],
     category,
+    subcategory,
     brand: (p.metadata?.brand as string) ?? p.collection?.title ?? "",
     inStock,
     description: p.description ?? "",
