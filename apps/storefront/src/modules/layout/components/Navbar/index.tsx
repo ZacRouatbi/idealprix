@@ -6,6 +6,7 @@ import { useAuth } from "@lib/context/AuthContext";
 import AuthModal from "../AuthModal";
 import { formatPrice, Product } from "@lib/data/products";
 import { useLiveSearch } from "@lib/hooks/useLiveSearch";
+import { useCategories } from "@lib/hooks/use-categories";
 
 export default function Navbar() {
   const { cart, totalItems } = useCart();
@@ -19,6 +20,9 @@ export default function Navbar() {
   const searchRef = useRef<HTMLDivElement>(null);
 
   const isLoggedIn = !!token;
+
+  /* Get categories from backend so menu links use canonical handles */
+  const { categories } = useCategories(6);
 
   /* filteredProducts now comes from useLiveSearch hook */
 
@@ -238,40 +242,59 @@ export default function Navbar() {
             >
               Tous les produits
             </NavLink>
-            <NavLink
-              to="/products?category=nettoyage"
-              className={({ isActive }) =>
-                isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
-              }
-            >
-              Nettoyage
-            </NavLink>
-            <NavLink
-              to="/products?category=cosmetiques"
-              className={({ isActive }) =>
-                isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
-              }
-            >
-              Cosmétiques
-            </NavLink>
-            <NavLink
-              to="/products?category=vaisselle"
-              className={({ isActive }) =>
-                isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
-              }
-            >
-              Vaisselle
-            </NavLink>
-            <NavLink
-              to="/products?promo=true"
-              className={({ isActive }) =>
-                isActive ? "text-[#D4302A] font-medium" : "text-gray-600 hover:text-[#D4302A]"
-              }
-            >
-              Promotions
-            </NavLink>
-          </div>
-        </div>
+
+                  {/* Dynamically render category links from backend handles to avoid mismatches */}
+                  {categories && categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <NavLink
+                        key={cat.id}
+                        to={`/products?category=${cat.handle}`}
+                        className={({ isActive }) =>
+                          isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+                        }
+                      >
+                        {cat.name}
+                      </NavLink>
+                    ))
+                  ) : (
+                    <>
+                      <NavLink
+                        to="/products?category=nettoyage"
+                        className={({ isActive }) =>
+                          isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+                        }
+                      >
+                        Nettoyage
+                      </NavLink>
+                      <NavLink
+                        to="/products?category=cosmetiques"
+                        className={({ isActive }) =>
+                          isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+                        }
+                      >
+                        Cosmétiques
+                      </NavLink>
+                      <NavLink
+                        to="/products?category=vaisselle"
+                        className={({ isActive }) =>
+                          isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+                        }
+                      >
+                        Vaisselle
+                      </NavLink>
+                    </>
+                  )}
+
+                  <NavLink
+                    to="/products?promo=true"
+                    className={({ isActive }) =>
+                      isActive ? "text-[#D4302A] font-medium" : "text-gray-600 hover:text-[#D4302A]"
+                    }
+                  >
+                    Promotions
+                  </NavLink>
+                </div>
+              </div>
       </div>
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />

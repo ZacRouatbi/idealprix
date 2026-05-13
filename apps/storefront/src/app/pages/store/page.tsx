@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router";
 import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { formatPrice } from "../../../lib/data/products";
@@ -28,7 +28,7 @@ export default function StorePage() {
     brands: [],
     minPrice: 0,
     maxPrice: 200000,
-    promoOnly: searchParams.get("promo") === "true",
+    promoOnly: false,
   });
   const [sortBy, setSortBy] = useState("default");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -37,6 +37,11 @@ export default function StorePage() {
   const categoryParam = searchParams.get("category");
   const searchQuery = searchParams.get("q");
   const promoParam = searchParams.get("promo");
+
+  // Keep filters.promoOnly in sync with URL param
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, promoOnly: searchParams.get("promo") === "true" }));
+  }, [searchParams]);
 
   const { products, loading, error } = useProducts({
     limit: 100,

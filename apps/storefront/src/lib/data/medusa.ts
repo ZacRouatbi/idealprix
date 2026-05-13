@@ -182,6 +182,8 @@ import type { Product } from "./products";
 export function normaliseProduct(p: MedusaProduct): Product {
   const firstVariant = p.variants?.[0];
   const firstPrice = firstVariant?.prices?.[0]?.amount ?? 0;
+  // Medusa may provide a calculated_price (discounted) on the variant
+  const calculatedPrice = firstVariant?.calculated_price?.calculated_amount ?? firstPrice;
   const thumbnail = p.thumbnail || p.images?.[0]?.url || "";
   const allImages = p.images?.map((i) => i.url).filter(Boolean) ?? (thumbnail ? [thumbnail] : []);
   const category = p.categories?.[0]?.name ?? p.collection?.title ?? "Général";
@@ -189,17 +191,29 @@ export function normaliseProduct(p: MedusaProduct): Product {
     firstVariant?.inventory_quantity === undefined ||
     (firstVariant?.inventory_quantity ?? 1) > 0;
 
+  // Determine promo state and discount percent from metadata/tags or calculated price
+  const metaIsPromo = Boolean(p.metadata?.is_promo);
+  const tagIsPromo = Boolean(p.tags?.some((t) => t.value === "promo"));
+  const isPromo = metaIsPromo || tagIsPromo || calculatedPrice < firstPrice;
+  const discountPercent = calculatedPrice < firstPrice && firstPrice > 0
+    ? Math.round(((firstPrice - calculatedPrice) / firstPrice) * 100)
+    : undefined;
+
   return {
     id: p.id,
     handle: p.handle,
     title: p.title,
-    price: firstPrice,
+    // Use calculated price (discounted if present) as the displayed price
+    price: calculatedPrice,
+    originalPrice: calculatedPrice < firstPrice ? firstPrice : undefined,
+    discountPercent,
     image: thumbnail,
     images: allImages.length > 0 ? allImages : [thumbnail],
     category,
     brand: (p.metadata?.brand as string) ?? p.collection?.title ?? "",
     inStock,
     description: p.description ?? "",
+    isPromo,
     variant_id: firstVariant?.id ?? "",
     variants: p.variants.map((v) => ({
       id: v.id,

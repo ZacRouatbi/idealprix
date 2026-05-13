@@ -96,7 +96,7 @@ export default async function Nav() {
           </LocalizedClientLink>
           <LocalizedClientLink
             href="/products?promo=true"
-            className="text-[#D4302A] font-medium"
+            className="text-gray-600 hover:text-[#D4302A]"
           >
             Promotions
           </LocalizedClientLink>
