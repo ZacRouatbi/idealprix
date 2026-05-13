@@ -6,7 +6,7 @@ import type { Product } from "@lib/data/products";
 export function useProducts(params: {
   limit?: number;
   offset?: number;
-  category_handle?: string[];
+  category_handle?: string | string[];  // <-- updated
 } = {}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);

@@ -13,6 +13,42 @@ const BASE_HEADERS: Record<string, string> = {
   ...(PUB_KEY ? { "x-publishable-api-key": PUB_KEY } : {}),
 };
 
+// Simple cache for category handle -> id
+const categoryHandleToIdCache = new Map<string, string>();
+
+/**
+ * Fetch category IDs for one or more handles using Medusa's /store/product-categories endpoint.
+ * Uses a Promise cache to avoid duplicate requests.
+ */
+async function getCategoryIdsByHandles(handles: string[]): Promise<string[]> {
+  const ids: string[] = [];
+  const missingHandles: string[] = [];
+
+  // Check cache first
+  for (const handle of handles) {
+    const cached = categoryHandleToIdCache.get(handle);
+    if (cached) {
+      ids.push(cached);
+    } else {
+      missingHandles.push(handle);
+    }
+  }
+
+  if (missingHandles.length === 0) return ids;
+
+  // Build query string for missing handles
+  const handleParams = missingHandles.map(h => `handle[]=${encodeURIComponent(h)}`).join('&');
+  const url = `/store/product-categories?${handleParams}&fields=id,handle`;
+
+  const response = await medusaFetch<{ product_categories: { id: string; handle: string }[] }>(url);
+  for (const cat of response.product_categories) {
+    categoryHandleToIdCache.set(cat.handle, cat.id);
+    ids.push(cat.id);
+  }
+
+  return ids;
+}
+
 export async function medusaFetch<T>(
   path: string,
   options: RequestInit = {}
@@ -69,7 +105,7 @@ export interface MedusaListResponse {
 export async function fetchProducts(params: {
   limit?: number;
   offset?: number;
-  category_handle?: string[];
+  category_handle?: string | string[];   // <-- now supported
   handle?: string;
   region_id?: string;
 } = {}): Promise<MedusaListResponse> {
@@ -77,10 +113,16 @@ export async function fetchProducts(params: {
   if (params.limit) qs.set("limit", String(params.limit));
   if (params.offset) qs.set("offset", String(params.offset));
   if (params.handle) qs.set("handle[]", params.handle);
-  if (params.category_handle?.length) {
-    params.category_handle.forEach((h) => qs.append("category_handle[]", h));
-  }
   if (params.region_id) qs.set("region_id", params.region_id);
+
+  // Convert category_handle(s) to category_id(s)
+  if (params.category_handle) {
+    const handles = Array.isArray(params.category_handle) ? params.category_handle : [params.category_handle];
+    const categoryIds = await getCategoryIdsByHandles(handles);
+    for (const id of categoryIds) {
+      qs.append("category_id[]", id);
+    }
+  }
 
   // Always expand what we need
   qs.set("fields", "id,title,handle,description,thumbnail,status,*images,*variants,*variants.prices,*categories,*collection,*tags");
