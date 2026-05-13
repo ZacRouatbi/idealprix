@@ -13,39 +13,39 @@ L.Icon.Default.mergeOptions({
 const STORES = [
   {
     id: 1,
-    name: "P1 (Sousse Ville)",
-    address: "P1, Sousse, TN",
-    coordinates: { lat: 35.8238, lng: 10.6294 },
+    name: "Sahloul 4",
+    address: "Ideal Prix Maxi Sahloul4",
+    coordinates: { lat: 35.8354, lng: 10.6045 },
   },
   {
     id: 2,
-    name: "Sahloul",
-    address: "16 Rue de Turquie, 4054 Sousse Sahloul - SOUSSE",
-    coordinates: { lat: 35.8487, lng: 10.5813 },
+    name: "Sahloul 1",
+    address: "Idéal Prix",
+    coordinates: { lat: 35.8381, lng: 10.5945 },
   },
   {
     id: 3,
-    name: "Sefaya",
-    address: "A neighborhood in the city of Sousse",
-    coordinates: { lat: 35.8133, lng: 10.6163 },
+    name: "Soukra",
+    address: "IDEAL PRIX SOUKRA",
+    coordinates: { lat: 36.8804, lng: 10.2612 },
   },
   {
     id: 4,
-    name: "Eriadh (Ennasr)",
-    address: "A neighborhood in the city of Sousse",
-    coordinates: { lat: 35.8119, lng: 10.6367 },
+    name: "Bareket Sahel",
+    address: "Ideal Prix Barraket Sahel",
+    coordinates: { lat: 36.4066, lng: 10.5609 },
   },
   {
     id: 5,
-    name: "Hammam Sousse",
-    address: "A coastal town located about 10 km north of central Sousse",
-    coordinates: { lat: 35.8608, lng: 10.5987 },
+    name: "Hay Riadh",
+    address: "Idéal Prix Erriadh",
+    coordinates: { lat: 35.8082, lng: 10.6089 },
   },
   {
     id: 6,
-    name: "Bou Hajar",
-    address: "A neighboring town in the Monastir Governorate, just south of Sousse",
-    coordinates: { lat: 35.6294, lng: 10.8975 },
+    name: "Souk Lahad",
+    address: "Ideal Prix",
+    coordinates: { lat: 35.8172, lng: 10.6309 },
   },
 ];
 
@@ -73,7 +73,7 @@ export default function StoresPage() {
             <h1 className="text-[#1E1E1E] mb-2" style={{ fontFamily: "Poppins, sans-serif", fontSize: "2rem", fontWeight: 700 }}>
               Nos magasins
             </h1>
-            <p className="text-[#717182]">Découvrez nos points de vente à Sousse</p>
+            <p className="text-[#717182]">Découvrez nos 6 points de vente</p>
           </div>
 
           {/* Map */}
