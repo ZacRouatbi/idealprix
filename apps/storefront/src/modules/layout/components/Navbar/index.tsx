@@ -4,26 +4,23 @@ import { User, ShoppingCart, Search, LogOut, X } from "lucide-react";
 import { useCart } from "@lib/context/CartContext";
 import { useAuth } from "@lib/context/AuthContext";
 import AuthModal from "../AuthModal";
-import { products, formatPrice, Product } from "@lib/data/products";
+import { formatPrice, Product } from "@lib/data/products";
+import { useLiveSearch } from "@lib/hooks/useLiveSearch";
 
 export default function Navbar() {
   const { cart, totalItems } = useCart();
   const { token, customer, checkAuth, logout } = useAuth();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
+  // Live search hook (debounced, fetches /api/search by default)
+  const { query: searchQuery, setQuery, results: filteredProducts, isLoading, clear } =
+    useLiveSearch();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const isLoggedIn = !!token;
 
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    return products
-      .filter((p) => p.title.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q))
-      .slice(0, 6);
-  }, [searchQuery]);
+  /* filteredProducts now comes from useLiveSearch hook */
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -55,16 +52,16 @@ export default function Navbar() {
     setSearchQuery("");
   }, []);
 
-  const clearSearch = useCallback(() => {
-    setSearchQuery("");
+  const clearSearch = () => {
+    clear();
     setShowSearchResults(false);
-  }, []);
+  };
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setSearchQuery(value);
+    setQuery(value);
     setShowSearchResults(value.trim().length > 0);
-  }, []);
+  };
 
   return (
     <>

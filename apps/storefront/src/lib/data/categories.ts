@@ -14,8 +14,7 @@ export const listCategories = async (query?: Record<string, unknown>) => {
       "/store/product-categories",
       {
         query: {
-          fields:
-            "*category_children, *products, *parent_category, *parent_category.parent_category",
+          fields: "category_children,products,parent_category,parent_category.parent_category",
           limit,
           ...query,
         },
@@ -23,11 +22,18 @@ export const listCategories = async (query?: Record<string, unknown>) => {
         cache: "force-cache",
       }
     )
-    .then(({ product_categories }) => product_categories)
+    .then((res) => {
+      try {
+        // Debugging: log raw response to help diagnose missing categories
+        // Server-side only
+        console.log("DEBUG: listCategories response:", JSON.stringify(res));
+      } catch (e) {}
+      return res.product_categories
+    })
 }
 
 export const getCategoryByHandle = async (categoryHandle: string[]) => {
-  const handle = `${categoryHandle.join("/")}`
+  const handle = encodeURIComponent(categoryHandle.join("/"))
 
   const next = {
     ...(await getCacheOptions("categories")),
@@ -38,12 +44,17 @@ export const getCategoryByHandle = async (categoryHandle: string[]) => {
       `/store/product-categories`,
       {
         query: {
-          fields: "*category_children, *products",
+          fields: "category_children,products,parent_category",
           handle,
         },
         next,
         cache: "force-cache",
       }
     )
-    .then(({ product_categories }) => product_categories[0])
+    .then((res) => {
+      try {
+        console.log("DEBUG: getCategoryByHandle response:", JSON.stringify(res));
+      } catch (e) {}
+      return res.product_categories[0]
+    })
 }

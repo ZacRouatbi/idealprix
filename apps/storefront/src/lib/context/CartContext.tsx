@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from "react";
 import { Product } from "../data/products";
 
 export type CartItem = {
@@ -14,10 +14,31 @@ type CartAction =
   | { type: "ADD_ITEM"; payload: Product }
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
-  | { type: "CLEAR_CART" };
+  | { type: "CLEAR_CART" }
+  | { type: "LOAD"; payload: CartItem[] };
+
+const STORAGE_KEY = "sevra_cart";
+
+function loadFromStorage(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveToStorage(items: CartItem[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {}
+}
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
+    case "LOAD":
+      return { items: action.payload };
+
     case "ADD_ITEM": {
       const existing = state.items.find(
         (item) => item.product.id === action.payload.id
@@ -37,11 +58,13 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         items: [...state.items, { product: action.payload, quantity: 1 }],
       };
     }
+
     case "REMOVE_ITEM":
       return {
         ...state,
         items: state.items.filter((item) => item.product.id !== action.payload),
       };
+
     case "UPDATE_QUANTITY":
       if (action.payload.quantity <= 0) {
         return {
@@ -59,8 +82,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             : item
         ),
       };
+
     case "CLEAR_CART":
       return { items: [] };
+
     default:
       return state;
   }
@@ -80,6 +105,19 @@ const CartContext = createContext<CartContextType | null>(null);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, dispatch] = useReducer(cartReducer, { items: [] });
+
+  // Hydrate from localStorage on mount
+  useEffect(() => {
+    const saved = loadFromStorage();
+    if (saved.length > 0) {
+      dispatch({ type: "LOAD", payload: saved });
+    }
+  }, []);
+
+  // Persist to localStorage on every change
+  useEffect(() => {
+    saveToStorage(cart.items);
+  }, [cart.items]);
 
   const addItem = (product: Product) =>
     dispatch({ type: "ADD_ITEM", payload: product });

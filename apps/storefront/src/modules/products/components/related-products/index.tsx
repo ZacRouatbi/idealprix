@@ -1,4 +1,5 @@
 import { products } from "@lib/data/products";
+import { Link } from "react-router";
 
 type RelatedProductsProps = {
   product: { id: string };
@@ -27,7 +28,7 @@ export default function RelatedProducts({ product }: RelatedProductsProps) {
       <ul className="grid grid-cols-2 small:grid-cols-3 medium:grid-cols-4 gap-x-6 gap-y-8">
         {relatedProducts.map((p) => (
           <li key={p.id}>
-            <a href={`/products/${p.handle}`}>{p.title}</a>
+            <Link to={`/products/${p.handle}`}>{p.title}</Link>
           </li>
         ))}
       </ul>

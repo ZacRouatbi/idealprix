@@ -1,135 +1,160 @@
 import { X } from "lucide-react";
-import { subcategories, brands } from "@lib/data/products";
+
+interface FilterState {
+  subcategories: string[];
+  brands: string[];
+  minPrice: number;
+  maxPrice: number;
+  promoOnly: boolean;
+}
 
 interface FilterSidebarProps {
-  filters: {
-    subcategories: string[];
-    brands: string[];
-    minPrice: number;
-    maxPrice: number;
-    promoOnly: boolean;
-  };
-  onFilterChange: (filters: FilterSidebarProps["filters"]) => void;
+  filters: FilterState;
+  onFilterChange: (filters: FilterState) => void;
   onClose?: () => void;
   isMobile?: boolean;
+  availableBrands?: string[];
+  availableSubcategories?: string[];
 }
 
 export default function FilterSidebar({
   filters,
   onFilterChange,
   onClose,
-  isMobile = false,
+  isMobile,
+  availableBrands = [],
+  availableSubcategories = [],
 }: FilterSidebarProps) {
-  const handleSubcategoryToggle = (sub: string) => {
-    const newSubcategories = filters.subcategories.includes(sub)
-      ? filters.subcategories.filter((s) => s !== sub)
-      : [...filters.subcategories, sub];
-    onFilterChange({ ...filters, subcategories: newSubcategories });
+  const toggle = (key: "subcategories" | "brands", value: string) => {
+    const current = filters[key];
+    onFilterChange({
+      ...filters,
+      [key]: current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value],
+    });
   };
 
-  const handleBrandToggle = (brand: string) => {
-    const newBrands = filters.brands.includes(brand)
-      ? filters.brands.filter((b) => b !== brand)
-      : [...filters.brands, brand];
-    onFilterChange({ ...filters, brands: newBrands });
-  };
+  const clearAll = () =>
+    onFilterChange({
+      subcategories: [],
+      brands: [],
+      minPrice: 0,
+      maxPrice: 200000,
+      promoOnly: false,
+    });
+
+  const hasActive =
+    filters.subcategories.length > 0 ||
+    filters.brands.length > 0 ||
+    filters.promoOnly;
 
   return (
-    <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-      {/* Mobile Header */}
-      {isMobile && (
-        <div className="flex items-center justify-between mb-4">
-          <h2
-            className="font-semibold text-[#1E1E1E]"
-            style={{ fontFamily: "Poppins, sans-serif" }}
-          >
-            Filtres
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 text-[#717182] hover:text-[#1E1E1E]"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-
-      {/* Subcategories */}
-      <div className="mb-6">
-        <h3
-          className="font-semibold text-[#1E1E1E] mb-3 text-sm"
-          style={{ fontFamily: "Poppins, sans-serif" }}
-        >
-          Sous-catégories
+    <div style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-[#1E1E1E] text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>
+          Filtres
         </h3>
-        <div className="space-y-2">
-          {subcategories.map((sub) => (
-            <label
-              key={sub.label}
-              className="flex items-center gap-2 text-sm text-[#1E1E1E] cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={filters.subcategories.includes(sub.label)}
-                onChange={() => handleSubcategoryToggle(sub.label)}
-                className="w-4 h-4 accent-[#D4302A]"
-              />
-              <span>{sub.label}</span>
-              <span className="text-[#717182]">({sub.count})</span>
-            </label>
-          ))}
+        <div className="flex items-center gap-2">
+          {hasActive && (
+            <button onClick={clearAll} className="text-xs text-[#D4302A] hover:underline">
+              Tout effacer
+            </button>
+          )}
+          {isMobile && onClose && (
+            <button onClick={onClose} className="p-1 hover:bg-[#F0F3FA] rounded-lg">
+              <X className="w-4 h-4 text-[#717182]" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Brands */}
-      <div className="mb-6">
-        <h3
-          className="font-semibold text-[#1E1E1E] mb-3 text-sm"
-          style={{ fontFamily: "Poppins, sans-serif" }}
-        >
-          Marques
-        </h3>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {brands.map((brand) => (
-            <label
-              key={brand}
-              className="flex items-center gap-2 text-sm text-[#1E1E1E] cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={filters.brands.includes(brand)}
-                onChange={() => handleBrandToggle(brand)}
-                className="w-4 h-4 accent-[#D4302A]"
-              />
-              <span>{brand}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Promo Filter */}
-      <div className="mb-6">
-        <label className="flex items-center gap-2 text-sm text-[#1E1E1E] cursor-pointer">
+      {/* Promo toggle */}
+      <div className="mb-5">
+        <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={filters.promoOnly}
-            onChange={(e) =>
-              onFilterChange({ ...filters, promoOnly: e.target.checked })
-            }
-            className="w-4 h-4 accent-[#D4302A]"
+            onChange={(e) => onFilterChange({ ...filters, promoOnly: e.target.checked })}
+            className="accent-[#D4302A] w-4 h-4"
           />
-          <span>Promotions uniquement</span>
+          <span className="text-sm text-[#1E1E1E] font-medium">Promotions uniquement</span>
         </label>
       </div>
 
-      {/* Apply Button (Mobile) */}
+      {/* Subcategories */}
+      {availableSubcategories.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-[#717182] uppercase tracking-wider mb-2">
+            Sous-catégorie
+          </p>
+          <div className="space-y-1.5">
+            {availableSubcategories.map((sub) => (
+              <label key={sub} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.subcategories.includes(sub)}
+                  onChange={() => toggle("subcategories", sub)}
+                  className="accent-[#D4302A] w-4 h-4"
+                />
+                <span className="text-sm text-[#1E1E1E]">{sub}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Brands */}
+      {availableBrands.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-[#717182] uppercase tracking-wider mb-2">
+            Marque
+          </p>
+          <div className="space-y-1.5">
+            {availableBrands.map((brand) => (
+              <label key={brand} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.brands.includes(brand)}
+                  onChange={() => toggle("brands", brand)}
+                  className="accent-[#D4302A] w-4 h-4"
+                />
+                <span className="text-sm text-[#1E1E1E]">{brand}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Price range */}
+      <div className="mb-5">
+        <p className="text-xs font-semibold text-[#717182] uppercase tracking-wider mb-2">
+          Prix max
+        </p>
+        <input
+          type="range"
+          min={0}
+          max={200000}
+          step={1000}
+          value={filters.maxPrice}
+          onChange={(e) => onFilterChange({ ...filters, maxPrice: Number(e.target.value) })}
+          className="w-full accent-[#D4302A]"
+        />
+        <div className="flex justify-between text-xs text-[#717182] mt-1">
+          <span>0 TND</span>
+          <span className="text-[#D4302A] font-medium">
+            {Math.floor(filters.maxPrice / 1000)},{String(filters.maxPrice % 1000).padStart(3, "0")} TND
+          </span>
+        </div>
+      </div>
+
       {isMobile && (
         <button
           onClick={onClose}
-          className="w-full bg-[#D4302A] text-white py-3 rounded-lg font-medium text-sm"
+          className="w-full bg-[#D4302A] text-white py-3 rounded-xl font-semibold text-sm"
           style={{ fontFamily: "Poppins, sans-serif" }}
         >
-          Appliquer les filtres
+          Voir les résultats
         </button>
       )}
     </div>

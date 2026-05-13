@@ -1,4 +1,5 @@
 import { products } from "@lib/data/products";
+import { Link } from "react-router";
 
 const PRODUCT_LIMIT = 12;
 
@@ -20,7 +21,7 @@ export default function PaginatedProducts({
         {paginatedProducts.map((p) => {
           return (
             <li key={p.id}>
-              <a href={`/products/${p.handle}`}>{p.title}</a>
+              <Link to={`/products/${p.handle}`}>{p.title}</Link>
             </li>
           );
         })}
