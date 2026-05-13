@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { formatPrice } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
+import { useCategories } from "../../../lib/hooks/use-categories";
 import ProductCard from "../../../modules/store/components/ProductCard";
 import FilterSidebar from "../../../modules/store/components/FilterSidebar";
 
@@ -48,6 +49,8 @@ export default function StorePage() {
     ...(categoryParam ? { category_handle: [categoryParam] } : {}),
   });
 
+  const { subcategories: backendSubcategories } = useCategories(6, categoryParam || undefined);
+
   const pageTitle = useMemo(() => {
     if (promoParam === "true") return "Promotions";
     if (searchQuery) return `Résultats pour "${searchQuery}"`;
@@ -64,6 +67,11 @@ export default function StorePage() {
     () => [...new Set(products.map((p) => p.subcategory).filter(Boolean) as string[])].sort(),
     [products]
   );
+  
+  // Use backend subcategories when available (from category hierarchy), fallback to product-derived
+  const availableSubcategories = backendSubcategories.length > 0 
+    ? [...new Set(backendSubcategories.map(c => c.name))].sort()
+    : availableSubcats;
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -177,7 +185,7 @@ export default function StorePage() {
               filters={filters}
               onFilterChange={setFilters}
               availableBrands={availableBrands}
-              availableSubcategories={availableSubcats}
+              availableSubcategories={availableSubcategories}
             />
           </aside>
 
@@ -226,14 +234,14 @@ export default function StorePage() {
         <div className="fixed inset-0 z-50 sm:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFilterOpen(false)} />
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-4">
-            <FilterSidebar
-              filters={filters}
-              onFilterChange={setFilters}
-              onClose={() => setMobileFilterOpen(false)}
-              isMobile
-              availableBrands={availableBrands}
-              availableSubcategories={availableSubcats}
-            />
+<FilterSidebar
+               filters={filters}
+               onFilterChange={setFilters}
+               onClose={() => setMobileFilterOpen(false)}
+               isMobile
+               availableBrands={availableBrands}
+               availableSubcategories={availableSubcategories}
+             />
           </div>
         </div>
       )}

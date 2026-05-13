@@ -148,6 +148,8 @@ export interface MedusaCategory {
   handle: string;
   description?: string;
   image?: { url: string } | null;
+  parent_category_id?: string;
+  parent_id?: string;
 }
 
 export interface MedusaCategoriesResponse {
@@ -156,8 +158,24 @@ export interface MedusaCategoriesResponse {
 
 export async function fetchCategories(): Promise<MedusaCategory[]> {
   try {
-    const res = await medusaFetch<MedusaCategoriesResponse>("/store/product-categories");
+    const res = await medusaFetch<MedusaCategoriesResponse>(
+      "/store/product-categories?fields=id,name,handle,description,image,parent_category_id,parent_id"
+    );
     return res.product_categories || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchSubcategories(categoryHandle: string): Promise<MedusaCategory[]> {
+  try {
+    const allCategories = await fetchCategories();
+    const parentCat = allCategories.find(c => c.handle === categoryHandle);
+    if (!parentCat) return [];
+    return allCategories.filter(c => {
+      const parentId = (c as any).parent_category_id || (c as any).parent_id;
+      return parentId === parentCat.id;
+    });
   } catch {
     return [];
   }
