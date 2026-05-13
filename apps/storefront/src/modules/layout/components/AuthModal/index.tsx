@@ -287,7 +287,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         onClick={onClose}
-        className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[2147483647] bg-black/50 backdrop-blur-sm"
       />
 
       <motion.div
@@ -295,7 +295,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 8 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
-        className="fixed inset-0 m-auto z-[110] h-fit w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl"
+        className="fixed inset-0 m-auto z-[2147483647] h-fit w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl"
       >
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
           <svg
