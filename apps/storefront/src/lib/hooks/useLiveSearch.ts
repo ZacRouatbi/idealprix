@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { fetchProducts, normaliseProduct } from "@lib/data/medusa";
 
 export function useLiveSearch(initial = "") {
   const [query, setQuery] = useState(initial);
@@ -8,7 +9,7 @@ export function useLiveSearch(initial = "") {
   const debounceRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const q = query.trim();
+    const q = query.trim().toLowerCase();
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     if (!q) {
       setResults([]);
@@ -20,14 +21,20 @@ export function useLiveSearch(initial = "") {
       controllerRef.current = new AbortController();
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
-          signal: controllerRef.current.signal,
-        });
-        if (!res.ok) throw new Error("search failed");
-        const data = await res.json();
-        setResults(data.results ?? data);
-      } catch (err) {
-        if ((err as any).name !== "AbortError") console.error(err);
+        // Fetch products and filter client-side by title/description/handle
+        const data = await fetchProducts({ limit: 100 });
+        const filtered = data.products
+          .filter(p => 
+            p.title.toLowerCase().includes(q) ||
+            (p.description && p.description.toLowerCase().includes(q)) ||
+            p.handle.toLowerCase().includes(q) ||
+            (p.metadata?.brand && (p.metadata.brand as string).toLowerCase().includes(q))
+          )
+          .map(normaliseProduct)
+          .slice(0, 10); // Limit to 10 results
+        setResults(filtered);
+      } catch (err: any) {
+        if (err.name !== "AbortError") console.error(err);
         setResults([]);
       } finally {
         setIsLoading(false);

@@ -240,25 +240,33 @@ export default function Navbar() {
             </NavLink>
             <NavLink
               to="/products?category=nettoyage"
-              className="text-gray-600 hover:text-[#D4302A] mr-6"
+              className={({ isActive }) =>
+                isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+              }
             >
               Nettoyage
             </NavLink>
             <NavLink
               to="/products?category=cosmetiques"
-              className="text-gray-600 hover:text-[#D4302A] mr-6"
+              className={({ isActive }) =>
+                isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+              }
             >
               Cosmétiques
             </NavLink>
             <NavLink
               to="/products?category=vaisselle"
-              className="text-gray-600 hover:text-[#D4302A] mr-6"
+              className={({ isActive }) =>
+                isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+              }
             >
               Vaisselle
             </NavLink>
             <NavLink
               to="/products?promo=true"
-              className="text-[#D4302A] font-medium"
+              className={({ isActive }) =>
+                isActive ? "text-[#D4302A] font-medium" : "text-gray-600 hover:text-[#D4302A]"
+              }
             >
               Promotions
             </NavLink>

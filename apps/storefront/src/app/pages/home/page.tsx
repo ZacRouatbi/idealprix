@@ -1,24 +1,32 @@
 ﻿import { Link } from "react-router";
-import { ArrowRight, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { formatPrice, HERO_IMAGE } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
+import { useCategories } from "../../../lib/hooks/use-categories";
 import ProductCard from "../../../modules/store/components/ProductCard";
 
 export default function HomePage() {
   const { products, loading } = useProducts({ limit: 100 });
- 
+  const { categories, loading: categoriesLoading } = useCategories(3);
+
   const popularProducts = products.filter((p) => p.inStock).slice(0, 4);
   const promoProducts = products.filter((p) => p.isPromo).slice(0, 4);
- 
-  // Derive categories from live products
-  const categoryMap = products.reduce<Record<string, number>>((acc, p) => {
-    if (p.category) acc[p.category] = (acc[p.category] ?? 0) + 1;
+
+  // Count products per category
+  const productCounts = products.reduce<Record<string, number>>((acc, p) => {
+    if (p.category) {
+      acc[p.category] = (acc[p.category] || 0) + 1;
+    }
     return acc;
   }, {});
-  const liveCategories = Object.entries(categoryMap).slice(0, 3).map(([name, count]) => ({
-    title: name,
-    handle: name.toLowerCase().replace(/\s+/g, "-"),
-    count,
+
+  // Enrich categories with product counts
+  const enrichedCategories = categories.map((cat) => ({
+    id: cat.id,
+    title: cat.name,
+    handle: cat.handle,
+    image: cat.image?.url || HERO_IMAGE,
+    count: productCounts[cat.name] || 0,
   }));
  
   return (
@@ -50,24 +58,35 @@ export default function HomePage() {
         </div>
       </section>
  
-      {/* Categories */}
-      {liveCategories.length > 0 && (
+{/* Categories */}
+      {!categoriesLoading && enrichedCategories.length > 0 && (
         <section className="bg-[#F0F3FA] w-full">
           <div className="max-w-7xl mx-auto px-4 py-10">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {liveCategories.map((cat) => (
+              {enrichedCategories.map((cat) => (
                 <Link
                   key={cat.handle}
                   to={`/products?category=${cat.handle}`}
-                  className="group relative overflow-hidden rounded-2xl bg-white border border-[#E5E5E5] p-6 flex items-center justify-between hover:shadow-md transition-shadow"
+                  className="group block relative overflow-hidden rounded-2xl border border-[#E5E5E5] hover:shadow-md transition-shadow"
                 >
-                  <div>
-                    <h3 className="font-semibold text-[#1E1E1E] mb-1" style={{ fontFamily: "Poppins, sans-serif" }}>
+                  {/* Category image as header/background */}
+                  <div className="relative h-32 w-full">
+                    <img
+                      src={cat.image}
+                      alt={cat.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <h3 className="absolute bottom-3 left-4 font-semibold text-white text-lg" style={{ fontFamily: "Poppins, sans-serif" }}>
                       {cat.title}
                     </h3>
-                    <p className="text-xs text-[#717182]">{cat.count} produit{cat.count !== 1 ? "s" : ""}</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-[#D4302A] group-hover:translate-x-1 transition-transform" />
+                  {/* Product count at bottom */}
+                  <div className="bg-white px-4 py-2.5">
+                    <p className="text-xs text-[#717182]">
+                      {cat.count} produit{cat.count !== 1 ? "s" : ""}
+                    </p>
+                  </div>
                 </Link>
               ))}
             </div>

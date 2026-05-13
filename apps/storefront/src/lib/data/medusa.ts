@@ -100,6 +100,27 @@ export async function fetchProductByHandle(handle: string): Promise<MedusaProduc
   }
 }
 
+export interface MedusaCategory {
+  id: string;
+  name: string;
+  handle: string;
+  description?: string;
+  image?: { url: string } | null;
+}
+
+export interface MedusaCategoriesResponse {
+  product_categories: MedusaCategory[];
+}
+
+export async function fetchCategories(): Promise<MedusaCategory[]> {
+  try {
+    const res = await medusaFetch<MedusaCategoriesResponse>("/store/product-categories");
+    return res.product_categories || [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchRegionId(): Promise<string | null> {
   try {
     const { regions } = await medusaFetch<{ regions: { id: string }[] }>("/store/regions");
