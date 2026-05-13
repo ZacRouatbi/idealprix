@@ -245,17 +245,19 @@ export default function Navbar() {
 
                   {/* Dynamically render category links from backend handles to avoid mismatches */}
                   {categories && categories.length > 0 ? (
-                    categories.map((cat) => (
-                      <NavLink
-                        key={cat.id}
-                        to={`/products?category=${cat.handle}`}
-                        className={({ isActive }) =>
-                          isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
-                        }
-                      >
-                        {cat.name}
-                      </NavLink>
-                    ))
+                    categories
+                      .filter((cat) => cat.handle !== "promotions")
+                      .map((cat) => (
+                        <NavLink
+                          key={cat.id}
+                          to={`/products?category=${cat.handle}`}
+                          className={({ isActive }) =>
+                            isActive ? "text-[#D4302A] font-medium mr-6" : "text-gray-600 hover:text-[#D4302A] mr-6"
+                          }
+                        >
+                          {cat.name}
+                        </NavLink>
+                      ))
                   ) : (
                     <>
                       <NavLink
