@@ -1,17 +1,19 @@
-import { products } from "@lib/data/products";
-import { Link } from "react-router";
+import { useProducts } from "@lib/hooks/use-products"
+import { Link } from "react-router"
 
 type RelatedProductsProps = {
-  product: { id: string };
-};
+  product: { id: string }
+}
 
 export default function RelatedProducts({ product }: RelatedProductsProps) {
+  const { products } = useProducts({ limit: 10 })
+
   const relatedProducts = products
     .filter((p) => p.id !== product.id)
-    .slice(0, 4);
+    .slice(0, 4)
 
   if (!relatedProducts.length) {
-    return null;
+    return null
   }
 
   return (
@@ -33,5 +35,5 @@ export default function RelatedProducts({ product }: RelatedProductsProps) {
         ))}
       </ul>
     </div>
-  );
+  )
 }

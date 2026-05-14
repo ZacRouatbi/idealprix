@@ -29,9 +29,35 @@ export default function StorePage() {
     subcategories: [],
     brands: [],
     minPrice: 0,
-    maxPrice: 200000,
+    maxPrice: 200000, // will be adjusted to product max after fetch
     promoOnly: false,
   });
+
+  // Price slider limit derived from ALL backend products to avoid unintentionally filtering out expensive items
+  const [priceLimit, setPriceLimit] = useState<number>(200000);
+
+  useEffect(() => {
+    let mounted = true;
+    async function deriveLimitFromBackend() {
+      try {
+        const all = await fetchProducts({ limit: 200 });
+        if (!mounted) return;
+        // Compute the highest price across all variants and their price entries
+        const max = (all.products || []).reduce((acc, p) => {
+          const prices = (p.variants || []).flatMap((v) => (v.prices || []).map((pr) => pr.amount ?? 0));
+          const localMax = prices.length > 0 ? Math.max(...prices) : 0;
+          return Math.max(acc, localMax);
+        }, 200000);
+        setPriceLimit(max);
+        // If user has default cap, expand it to backend max
+        setFilters((prev) => ({ ...prev, maxPrice: prev.maxPrice === 200000 ? max : prev.maxPrice }));
+      } catch (e) {
+        console.debug("[store-page] deriveLimitFromBackend failed", e);
+      }
+    }
+    deriveLimitFromBackend();
+    return () => { mounted = false; };
+  }, []);
   const [sortBy, setSortBy] = useState("default");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -74,7 +100,7 @@ export default function StorePage() {
     }
     // Get category ID from handle
     medusaFetch<{ product_categories: { id: string; handle: string }[] }>(
-      `/store/product-categories?handle[]=${categoryParam}&fields=id,handle`
+      `/store/product-categories?handle[]=${encodeURIComponent(categoryParam || '')}&fields=id,handle`
     ).then((res) => {
       const cat = res.product_categories?.[0];
       if (cat) {
@@ -90,6 +116,30 @@ export default function StorePage() {
     limit: 100,
     ...(allCategoryIds.length > 0 ? { category_id: allCategoryIds } : categoryParam ? { category_handle: [categoryParam] } : {}),
   });
+
+  // Runtime diagnostic: compare all backend products vs the list returned with current filters
+  useEffect(() => {
+    let mounted = true;
+    async function compare() {
+      try {
+        const all = await fetchProducts({ limit: 100 });
+        if (!mounted) return;
+        const allIds = (all.products || []).map((p) => p.id);
+        const shownIds = products.map((p) => p.id);
+        const missing = allIds.filter((id) => !shownIds.includes(id));
+        if (missing.length > 0) {
+          console.warn("[store-page] products present in backend but not shown in storefront list:", missing, { allCount: all.count, shownCount: shownIds.length });
+        } else {
+          console.debug("[store-page] all backend products are shown (count)", allIds.length);
+        }
+      } catch (e) {
+        console.debug("[store-page] compare failed", e);
+      }
+    }
+    // Run after products resolved
+    if (!loading) compare();
+    return () => { mounted = false; };
+  }, [loading, products]);
 
   const pageTitle = useMemo(() => {
     if (promoParam === "true") return "Promotions";
@@ -127,11 +177,8 @@ export default function StorePage() {
     }
 
     if (filters.subcategories.length > 0) {
-      // Check if product has ANY of the selected subcategories in its categories
       result = result.filter((p) => {
-        // Check subcategory field AND if the product's main category matches a subcategory
         if (p.subcategory && filters.subcategories.includes(p.subcategory)) return true;
-        // Also check if the category itself matches (for direct subcategory pages)
         if (p.category && filters.subcategories.includes(p.category)) return true;
         return false;
       });
@@ -149,6 +196,7 @@ export default function StorePage() {
       result = result.filter((p) => p.isPromo);
     }
 
+    // Sort by selected criteria
     switch (sortBy) {
       case "price-asc":
         result.sort((a, b) => a.price - b.price);
@@ -158,6 +206,15 @@ export default function StorePage() {
         break;
       case "name":
         result.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "created_at":
+      default:
+        // Sort by creation date (newest first)
+        result.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
         break;
     }
 
@@ -231,6 +288,7 @@ export default function StorePage() {
               onFilterChange={setFilters}
               availableBrands={availableBrands}
               availableSubcategories={availableSubcategories}
+              maxPriceLimit={priceLimit}
             />
           </aside>
 

@@ -31,6 +31,8 @@ export type Product = {
   variant_id?: string;
   /** All available variants */
   variants?: ProductVariant[];
+  /** Product creation date for sorting by newest */
+  createdAt?: string;
 };
 
 export type Category = {

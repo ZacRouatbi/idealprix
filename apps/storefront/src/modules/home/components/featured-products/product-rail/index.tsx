@@ -1,14 +1,14 @@
-import { products } from "@lib/data/products"
+import { useProducts } from "@lib/hooks/use-products"
 
 export default function ProductRail({
   collection,
 }: {
   collection: { title: string; handle: string; id: string }
 }) {
-  const featuredProducts = products.slice(0, 4);
+  const { products } = useProducts({ limit: 4 })
 
-  if (!featuredProducts) {
-    return null;
+  if (!products.length) {
+    return null
   }
 
   return (
@@ -17,15 +17,17 @@ export default function ProductRail({
         <h2 className="text-xl font-semibold text-gray-900">{collection.title}</h2>
       </div>
       <ul className="grid grid-cols-2 small:grid-cols-3 gap-x-6 gap-y-24 small:gap-y-36">
-        {featuredProducts &&
-          featuredProducts.map((product) => (
-            <li key={product.id}>
-              <a href={`/products/${product.handle}`} className="text-gray-700 hover:text-[#D4302A]">
-                {product.title}
-              </a>
-            </li>
-          ))}
+        {products.map((product) => (
+          <li key={product.id}>
+            <a
+              href={`/products/${product.handle}`}
+              className="text-gray-700 hover:text-[#D4302A]"
+            >
+              {product.title}
+            </a>
+          </li>
+        ))}
       </ul>
     </div>
-  );
+  )
 }

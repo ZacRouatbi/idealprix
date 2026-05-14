@@ -7,18 +7,13 @@ import {
   ShoppingBag,
   ArrowRight,
   Tag,
-  Truck,
 } from "lucide-react";
 import { useCart } from "../../../lib/context/CartContext";
 import { formatPrice } from "../../../lib/data/products";
 
-const SHIPPING_COST = 7000; // 7,000 TND standard
-
 export default function CartPage() {
   const { cart, removeItem, updateQuantity, subtotal } = useCart();
   const navigate = useNavigate();
-
-  const total = subtotal + (subtotal > 0 ? SHIPPING_COST : 0);
 
   if (cart.items.length === 0) {
     return (
@@ -197,15 +192,6 @@ export default function CartPage() {
                     {formatPrice(subtotal)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#717182] flex items-center gap-1">
-                    <Truck className="w-3.5 h-3.5" />
-                    Livraison standard
-                  </span>
-                  <span className="font-medium text-[#1E1E1E]">
-                    {formatPrice(SHIPPING_COST)}
-                  </span>
-                </div>
               </div>
 
               <div className="border-t border-[#E5E5E5] mt-3 pt-3">
@@ -220,7 +206,7 @@ export default function CartPage() {
                     className="font-bold text-[#1E1E1E]"
                     style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.1rem" }}
                   >
-                    {formatPrice(total)}
+                    {formatPrice(subtotal)}
                   </span>
                 </div>
               </div>

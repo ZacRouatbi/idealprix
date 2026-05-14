@@ -1,15 +1,27 @@
-import { products } from "@lib/data/products";
-import ProductActions from "@modules/products/components/product-actions";
+import { fetchProductByHandle, normaliseProduct } from "@lib/data/medusa"
+import ProductActions from "@modules/products/components/product-actions"
+import { useEffect, useState } from "react"
 
-/**
- * Displays product actions for a product by handle.
- */
+type Product = {
+  id: string
+  handle: string
+  title: string
+  price: number
+  description?: string
+}
+
 export default function ProductActionsWrapper({ handle }: { handle: string }) {
-  const product = products.find((p) => p.handle === handle);
+  const [product, setProduct] = useState<Product | null>(null)
+
+  useEffect(() => {
+    fetchProductByHandle(handle).then((p) => {
+      if (p) setProduct(normaliseProduct(p))
+    })
+  }, [handle])
 
   if (!product) {
-    return null;
+    return null
   }
 
-  return <ProductActions product={product} />;
+  return <ProductActions product={product} />
 }

@@ -24,7 +24,8 @@ export default function FilterSidebar({
   isMobile,
   availableBrands = [],
   availableSubcategories = [],
-}: FilterSidebarProps) {
+  maxPriceLimit = 200000,
+}: FilterSidebarProps & { maxPriceLimit?: number }) {
   const toggle = (key: "subcategories" | "brands", value: string) => {
     const current = filters[key];
     onFilterChange({
@@ -40,7 +41,7 @@ export default function FilterSidebar({
       subcategories: [],
       brands: [],
       minPrice: 0,
-      maxPrice: 200000,
+      maxPrice: maxPriceLimit,
       promoOnly: false,
     });
 
@@ -134,9 +135,9 @@ export default function FilterSidebar({
         <input
           type="range"
           min={0}
-          max={200000}
+          max={maxPriceLimit}
           step={1000}
-          value={filters.maxPrice}
+          value={Math.min(filters.maxPrice, maxPriceLimit)}
           onChange={(e) => onFilterChange({ ...filters, maxPrice: Number(e.target.value) })}
           className="w-full accent-[#D4302A]"
         />

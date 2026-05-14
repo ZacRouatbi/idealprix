@@ -61,6 +61,11 @@ export default function ProductPage() {
 
   const relatedProducts = allProducts
     .filter((p) => p.category === product.category && p.id !== product.id)
+    .sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    })
     .slice(0, 4);
 
   // Resolve the active variant

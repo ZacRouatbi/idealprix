@@ -53,6 +53,8 @@ export async function medusaFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const debug = (import.meta as any).env?.VITE_MEDUSA_DEBUG === "true";
+  if (debug) console.debug(`[medusaFetch] request ${path}`, options);
   const res = await fetch(`${BACKEND_URL}${path}`, {
     ...options,
     headers: {
@@ -60,11 +62,20 @@ export async function medusaFetch<T>(
       ...((options.headers as Record<string, string>) || {}),
     },
   });
+  const text = await res.text();
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err?.message || `Medusa API error ${res.status}: ${path}`);
+    let errMsg = res.statusText;
+    try {
+      const parsed = JSON.parse(text);
+      errMsg = parsed?.message || errMsg;
+    } catch (e) {
+      // ignore parse errors
+    }
+    if (debug) console.debug(`[medusaFetch] error ${res.status} ${path}`, errMsg, text);
+    throw new Error(errMsg || `Medusa API error ${res.status}: ${path}`);
   }
-  return res.json();
+  if (debug) console.debug(`[medusaFetch] response ${path}`, text);
+  return JSON.parse(text) as T;
 }
 
 /* ─── Types ─────────────────────────────────── */
@@ -87,10 +98,11 @@ export interface MedusaProduct {
   thumbnail?: string;
   images?: { url: string }[];
   variants: MedusaProductVariant[];
-  categories?: { id: string; name: string; handle: string }[];
+  categories?: MedusaCategory[];
   collection?: { id: string; title: string; handle: string };
   tags?: { id: string; value: string }[];
   metadata?: Record<string, unknown>;
+  created_at?: string;
 }
 
 export interface MedusaListResponse {
@@ -107,14 +119,17 @@ export async function fetchProducts(params: {
   offset?: number;
   category_handle?: string | string[];   // <-- now supported
   category_id?: string | string[];       // <-- added for direct category ID filtering
-  handle?: string;
+  handle?: string | string[];
   region_id?: string;
 } = {}): Promise<MedusaListResponse> {
   const qs = new URLSearchParams();
   if (params.limit) qs.set("limit", String(params.limit));
   if (params.offset) qs.set("offset", String(params.offset));
-  if (params.handle) qs.set("handle[]", params.handle);
-  if (params.region_id) qs.set("region_id", params.region_id);
+  if (params.handle) {
+    const handles = Array.isArray(params.handle) ? params.handle : [params.handle];
+    for (const h of handles) qs.append("handle[]", h);
+  }
+  if (params.region_id) qs.set("region_id", params.region_id as string);
 
   // Convert category_handle(s) to category_id(s)
   if (params.category_handle) {
@@ -134,9 +149,11 @@ export async function fetchProducts(params: {
   }
 
   // Always expand what we need
-  qs.set("fields", "id,title,handle,description,thumbnail,status,*images,*variants,*variants.prices,*categories,*collection,*tags");
+  qs.set("fields", "id,title,handle,description,thumbnail,status,created_at,*images,*variants,*variants.prices,*categories,*collection,*tags");
 
   const query = qs.toString();
+  const debug = (import.meta as any).env?.VITE_MEDUSA_DEBUG === "true";
+  if (debug) console.debug(`[fetchProducts] query=${query}`);
   return medusaFetch<MedusaListResponse>(
     `/store/products${query ? `?${query}` : ""}`
   );
@@ -222,7 +239,7 @@ export function normaliseProduct(p: MedusaProduct): Product {
   const childCategory = cats.find(c => c.parent_category_id || c.parent_id);
   const category = parentCategory?.name ?? cats[0]?.name ?? p.collection?.title ?? "Général";
   const subcategory = childCategory?.name ?? (cats[1]?.name || undefined);
-  
+
   const inStock =
     firstVariant?.inventory_quantity === undefined ||
     (firstVariant?.inventory_quantity ?? 1) > 0;
@@ -235,27 +252,103 @@ export function normaliseProduct(p: MedusaProduct): Product {
     ? Math.round(((firstPrice - calculatedPrice) / firstPrice) * 100)
     : undefined;
 
-  return {
-    id: p.id,
-    handle: p.handle,
-    title: p.title,
-    // Use calculated price (discounted if present) as the displayed price
-    price: calculatedPrice,
-    originalPrice: calculatedPrice < firstPrice ? firstPrice : undefined,
-    discountPercent,
-    image: thumbnail,
-    images: allImages.length > 0 ? allImages : [thumbnail],
-    category,
-    subcategory,
-    brand: (p.metadata?.brand as string) ?? p.collection?.title ?? "",
-    inStock,
-    description: p.description ?? "",
-    isPromo,
-    variant_id: firstVariant?.id ?? "",
-    variants: p.variants.map((v) => ({
-      id: v.id,
-      title: v.title,
-      price: v.prices?.[0]?.amount ?? firstPrice,
-    })),
+    return {
+      id: p.id,
+      handle: p.handle,
+      title: p.title,
+      // Use calculated price (discounted if present) as the displayed price
+      price: calculatedPrice,
+      originalPrice: calculatedPrice < firstPrice ? firstPrice : undefined,
+      discountPercent,
+      image: thumbnail,
+      images: allImages.length > 0 ? allImages : [thumbnail],
+      category,
+      subcategory,
+      brand: (p.metadata?.brand as string) ?? p.collection?.title ?? "",
+      inStock,
+      description: p.description ?? "",
+      isPromo,
+      variant_id: firstVariant?.id,
+      variants: p.variants?.map((v) => ({
+        id: v.id,
+        title: v.title,
+        price: v.prices?.[0]?.amount ?? firstPrice,
+      })) ?? [],
+      createdAt: p.created_at,
+    };
+  
+}
+// ─── ADD THESE TYPES & FUNCTION TO YOUR medusa.ts ─────────────────────────────
+// Place them after your existing exports at the bottom of medusa.ts
+
+export interface MedusaOrderItem {
+  id: string;
+  title: string;
+  quantity: number;
+  unit_price: number;
+  thumbnail?: string;
+  variant?: {
+    title: string;
+    sku?: string;
   };
+  product?: {
+    title: string;
+    thumbnail?: string;
+  };
+}
+
+export interface MedusaOrder {
+  id: string;
+  display_id: number;
+  status: string;
+  payment_status: string;
+  fulfillment_status: string;
+  total: number;
+  subtotal: number;
+  shipping_total: number;
+  tax_total: number;
+  currency_code: string;
+  created_at: string;
+  items: MedusaOrderItem[];
+  shipping_address?: {
+    first_name?: string;
+    last_name?: string;
+    address_1?: string;
+    city?: string;
+    country_code?: string;
+  };
+}
+
+export interface MedusaOrdersResponse {
+  orders: MedusaOrder[];
+  count: number;
+  offset: number;
+  limit: number;
+}
+
+/**
+ * Fetch the currently logged-in customer's orders.
+ * Requires a valid JWT token from useAuth().
+ */
+export async function fetchCustomerOrders(
+  token: string,
+  params: { limit?: number; offset?: number } = {}
+): Promise<MedusaOrdersResponse> {
+  const qs = new URLSearchParams();
+  qs.set("limit", String(params.limit ?? 10));
+  qs.set("offset", String(params.offset ?? 0));
+  // Expand all line items and their nested product/variant info
+  qs.set(
+    "fields",
+    "id,display_id,status,payment_status,fulfillment_status,total,subtotal,shipping_total,tax_total,currency_code,created_at,*items,*items.variant,*items.product,*shipping_address"
+  );
+
+  return medusaFetch<MedusaOrdersResponse>(
+    `/store/customers/me/orders?${qs.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 }

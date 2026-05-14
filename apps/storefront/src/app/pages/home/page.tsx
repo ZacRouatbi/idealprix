@@ -11,7 +11,14 @@ export default function HomePage() {
   const { products, loading } = useProducts({ limit: 100 });
   const { categories, loading: categoriesLoading } = useCategories(3);
 
-  const popularProducts = products.filter((p) => p.inStock).slice(0, 4);
+  const popularProducts = products
+    .filter((p) => p.inStock)
+    .sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    })
+    .slice(0, 4);
   const promoProducts = products.filter((p) => p.isPromo).slice(0, 4);
 
   // Fetch product counts per category (including subcategories)

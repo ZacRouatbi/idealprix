@@ -6,7 +6,8 @@ import type { Product } from "@lib/data/products";
 export function useProducts(params: {
   limit?: number;
   offset?: number;
-  category_handle?: string | string[];  // <-- updated
+  category_handle?: string | string[];
+  category_id?: string | string[];
 } = {}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
@@ -20,6 +21,8 @@ export function useProducts(params: {
     setError(null);
     try {
       const res = await fetchProducts({ limit: 100, ...params });
+      const debug = (import.meta as any).env?.VITE_MEDUSA_DEBUG === "true";
+      if (debug) console.debug('[useProducts] params', params, 'fetched count', res.count, 'ids', res.products.map(p => p.id));
       setProducts(res.products.map(normaliseProduct));
       setTotal(res.count);
     } catch (err: any) {

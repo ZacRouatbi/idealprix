@@ -54,7 +54,7 @@ async function medusaFetch<T>(path: string, options: RequestInit = {}): Promise<
 
 async function ensureMedusaCart(
    localItems: { variantId: string; quantity: number }[]
-): Promise<string> {
+ ): Promise<string> {
   let stored = sessionStorage.getItem("medusa_cart_id");
 
   // Validate stored cart or create new one
@@ -85,25 +85,26 @@ async function ensureMedusaCart(
     };
   }>(`/store/carts/${stored}`);
 
+  console.log("Cart items from Medusa:", cart.items.map(i => ({ variant_id: i.variant_id })));
   const medusaItems = new Map(
     cart.items.map((item) => [`${item.variant_id}`, { id: item.id, quantity: item.quantity }])
   );
 
-  // Add or update items
-  for (const item of localItems) {
-    const existing = medusaItems.get(item.variantId);
-    if (existing && existing.quantity !== item.quantity) {
-      await medusaFetch(`/store/carts/${stored}/line-items/${existing.id}`, {
-        method: "POST",
-        body: JSON.stringify({ quantity: item.quantity }),
-      }).catch(() => {});
-    } else if (!existing) {
-      await medusaFetch(`/store/carts/${stored}/line-items`, {
-        method: "POST",
-        body: JSON.stringify({ variant_id: item.variantId, quantity: item.quantity }),
-      }).catch(() => {});
-    }
-  }
+// Add or update items
+   for (const item of localItems) {
+     const existing = medusaItems.get(item.variantId);
+     if (existing && existing.quantity !== item.quantity) {
+       await medusaFetch(`/store/carts/${stored}/line-items/${existing.id}`, {
+         method: "POST",
+         body: JSON.stringify({ quantity: item.quantity }),
+       }).catch((e) => { console.warn(`Failed to update line item for variant ${item.variantId}:`, e); });
+     } else if (!existing) {
+       await medusaFetch(`/store/carts/${stored}/line-items`, {
+         method: "POST",
+         body: JSON.stringify({ variant_id: item.variantId, quantity: item.quantity }),
+       }).catch((e) => { console.warn(`Failed to add line item for variant ${item.variantId}:`, e); });
+     }
+   }
 
   // Remove items that are no longer in local cart
   for (const [variantId, item] of medusaItems) {
@@ -126,7 +127,7 @@ export default function CheckoutPage() {
     fullName: "", phone: "", address: "", city: "", postalCode: "", notes: "",
   });
   const [shippingOptions, setShippingOptions] = useState<
-    { id: string; name: string; amount: number }[]
+    { id: string; name: string; amount: number; shipping_profile_id?: string }[]
   >([]);
   const [shippingOptionId, setShippingOptionId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
@@ -146,34 +147,42 @@ export default function CheckoutPage() {
     { n: 3, label: "Paiement" },
   ];
 
-  // Sync local cart with Medusa cart on checkout page load
-  useEffect(() => {
-    const syncCart = async () => {
-      try {
-        const localItems = cart.items.map((item) => ({
-          variantId: item.product.variant_id ?? item.product.id,
-          quantity: item.quantity,
-        }));
-        if (localItems.length > 0) {
-          await ensureMedusaCart(localItems);
-        }
-      } catch (err) {
-        console.error("Failed to sync cart:", err);
-      }
-    };
-    syncCart();
-  }, []);
+// Sync local cart with Medusa cart on checkout page load
+    // Clear any stale cart to ensure fresh data
+    useEffect(() => {
+      sessionStorage.removeItem("medusa_cart_id");
+      sessionStorage.removeItem("medusa_shipping_option_id");
+      
+      const syncCart = async () => {
+            try {
+              const localItems: { variantId: string; quantity: number }[] = [];
+              for (const item of cart.items) {
+                if (item.product.variant_id) {
+                  localItems.push({ variantId: item.product.variant_id, quantity: item.quantity });
+                }
+              }
+              if (localItems.length > 0) {
+                await ensureMedusaCart(localItems);
+              }
+            } catch (err) {
+              console.error("Failed to sync cart:", err);
+            }
+         };
+     syncCart();
+   }, []);
 
-  const handleAddressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-    try {
-      const localItems = cart.items.map((item) => ({
-        variantId: item.product.variant_id ?? item.product.id,
-        quantity: item.quantity,
-      }));
-      const cartId = await ensureMedusaCart(localItems);
+const handleAddressSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
+     setError(null);
+     setIsLoading(true);
+     try {
+       const localItems: { variantId: string; quantity: number }[] = [];
+       for (const item of cart.items) {
+         if (item.product.variant_id) {
+           localItems.push({ variantId: item.product.variant_id, quantity: item.quantity });
+         }
+       }
+       const cartId = await ensureMedusaCart(localItems);
 
       const nameParts = address.fullName.trim().split(" ");
       const firstName = nameParts[0] || "";
@@ -205,19 +214,17 @@ export default function CheckoutPage() {
       });
 
       const { shipping_options } = await medusaFetch<{
-        shipping_options: { id: string; name: string; amount: number }[];
+        shipping_options: { id: string; name: string; amount: number; shipping_profile_id?: string }[];
       }>(`/store/shipping-options?cart_id=${cartId}`);
 
       if (shipping_options?.length) {
+        console.log("Available shipping options:", shipping_options.map(o => ({ id: o.id, name: o.name, profile_id: o.shipping_profile_id })));
         setShippingOptions(shipping_options);
         setShippingOptionId(shipping_options[0].id);
       } else {
-        const fallback = [
-          { id: "fallback_standard", name: "Livraison standard (3–5j)", amount: 7000 },
-          { id: "fallback_express", name: "Livraison express (24–48h)", amount: 12000 },
-        ];
-        setShippingOptions(fallback);
-        setShippingOptionId(fallback[0].id);
+        const cartDetails = await medusaFetch<{ cart: any }>(`/store/carts/${cartId}`);
+        console.error("No shipping options available. Cart details:", cartDetails);
+        throw new Error("Aucune option de livraison disponible. Vérifiez que les produits du panier ont un profil de livraison assigné dans l'administration Medusa.");
       }
 
       setCurrentStep(2);
@@ -236,13 +243,20 @@ export default function CheckoutPage() {
       const cartId = sessionStorage.getItem("medusa_cart_id");
       if (!cartId) throw new Error("Panier introuvable.");
 
-      if (!shippingOptionId.startsWith("fallback_")) {
-        await medusaFetch(`/store/carts/${cartId}/shipping-methods`, {
-          method: "POST",
-          body: JSON.stringify({ option_id: shippingOptionId }),
-        });
+      if (shippingOptionId.startsWith("fallback_")) {
+        setError("Veuillez sélectionner une option de livraison valide.");
+        return;
       }
 
+      const response = await medusaFetch<{ success: boolean }>(
+        `/store/carts/${cartId}/shipping-methods`,
+        {
+          method: "POST",
+          body: JSON.stringify({ option_id: shippingOptionId }),
+        }
+      ).catch((e) => { throw new Error(`Failed to add shipping method: ${e.message}`); });
+
+      sessionStorage.setItem("medusa_shipping_option_id", shippingOptionId);
       setCurrentStep(3);
     } catch (err: any) {
       setError(err.message || "Erreur lors de la sélection de la livraison.");
@@ -258,7 +272,18 @@ export default function CheckoutPage() {
       const cartId = sessionStorage.getItem("medusa_cart_id");
       if (!cartId) throw new Error("Panier introuvable.");
 
-      // Create payment collection
+      const { cart: currentCart } = await medusaFetch<{
+        cart: { shipping_methods: { id: string }[]; items: { variant_id?: string }[] }
+      }>(`/store/carts/${cartId}`);
+
+      const storedShippingOptionId = sessionStorage.getItem("medusa_shipping_option_id");
+      if (!currentCart.shipping_methods?.length && storedShippingOptionId) {
+        await medusaFetch(`/store/carts/${cartId}/shipping-methods`, {
+          method: "POST",
+          body: JSON.stringify({ option_id: storedShippingOptionId }),
+        });
+      }
+
       let collectionId: string;
       try {
         const { payment_collection } = await medusaFetch<{
@@ -286,11 +311,36 @@ export default function CheckoutPage() {
         }
       ).catch(() => {});
 
-      // Complete the cart
-      const result = await medusaFetch<{
+// Complete the cart
+      const cartBeforeComplete = await medusaFetch<{ cart: { items?: { variant_id?: string }[] } }>(`/store/carts/${cartId}`);
+      console.log("Cart items before completion:", cartBeforeComplete.cart.items?.map((i: { variant_id?: string }) => i.variant_id));
+
+const result = await medusaFetch<{
         type: string;
         order?: { id: string };
-      }>(`/store/carts/${cartId}/complete`, { method: "POST" });
+      }>(`/store/carts/${cartId}/complete`, { method: "POST" }).catch(async (e) => {
+          const cartDetails = await medusaFetch<{ cart: any }>(`/store/carts/${cartId}?fields=id,*items,*items.product,*shipping_methods`);
+          const productProfiles = cartDetails.cart.items?.map((i: any) => i.product?.shipping_profile_id || i.product?.shipping_profile?.id) || [];
+          const shippingMethodProfiles = cartDetails.cart.shipping_methods?.map((sm: any) => sm.shipping_option?.shipping_profile_id || sm.shipping_option?.shipping_profile?.id) || [];
+
+          console.error("Cart completion failed:", e, {
+            cartId,
+            itemVariantIds: cartDetails.cart.items?.map((i: any) => i.variant_id),
+            productProfiles,
+            shippingMethodProfiles,
+            hasShippingMethod: !!(cartDetails.cart.shipping_methods?.length),
+            profilesMatch: productProfiles.some((p: string) => shippingMethodProfiles.includes(p)),
+            productData: cartDetails.cart.items?.map((i: any) => ({ variant_id: i.variant_id, product: i.product }))
+          });
+
+          if (e.message?.includes("shipping profiles")) {
+            if (productProfiles.every((p: string) => !p)) {
+              throw new Error("ERREUR: Les produits du panier n'ont pas de profil de livraison. Dans Medusa Admin: Produits → Ouvrir chaque produit → Onglet 'Shipping' → Sélectionner 'Default Shipping Profile'");
+            }
+            throw new Error(`ERREUR: Profil produit [${productProfiles.join(', ')}] ne correspond pas aux options [${shippingMethodProfiles.join(', ')}]. Vérifiez que les profils correspondent.`);
+          }
+          throw new Error(`Erreur lors de la finalisation: ${e.message}`);
+        });
 
       if (result.type === "order" && result.order) {
         sessionStorage.removeItem("medusa_cart_id");

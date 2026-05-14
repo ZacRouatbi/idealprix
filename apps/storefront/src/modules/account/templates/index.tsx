@@ -2,13 +2,16 @@ import { useState } from "react";
 import { User, Package, Mail, MapPin, Phone, Save } from "lucide-react";
 import { HttpTypes } from "@medusajs/types";
 import { useAuth } from "@lib/context/AuthContext";
+import OrdersSection from "@modules/account/components/OrdersSection";
+import type { MedusaOrder } from "@lib/data/medusa";
 
 interface AccountTemplateProps {
   customer?: HttpTypes.StoreCustomer | null;
-  orders?: HttpTypes.StoreOrder[] | null;
+  orders?: MedusaOrder[] | null;
+  ordersLoading?: boolean;
 }
 
-export default function AccountTemplate({ customer, orders }: AccountTemplateProps) {
+export default function AccountTemplate({ customer, orders, ordersLoading }: AccountTemplateProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,32 +76,9 @@ export default function AccountTemplate({ customer, orders }: AccountTemplatePro
         address: "",
       };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    if (status === "completed") return "bg-green-100 text-green-800";
-    if (status === "pending") return "bg-blue-100 text-blue-800";
-    return "bg-gray-100 text-gray-800";
-  };
-
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("fr-TN", {
-      style: "currency",
-      currency: currency?.toUpperCase() || "TND",
-    }).format(amount / 100);
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        Mon compte
-      </h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Mon compte</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ===== SECTION 1 : INFORMATIONS PERSONNELLES ===== */}
@@ -219,77 +199,12 @@ export default function AccountTemplate({ customer, orders }: AccountTemplatePro
             {/* Header */}
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-3">
               <Package className="w-5 h-5 text-red-600" />
-              <h2 className="font-bold text-lg text-gray-900">
-                Mes commandes
-              </h2>
+              <h2 className="font-bold text-lg text-gray-900">Mes commandes</h2>
             </div>
 
-            {!orders || orders.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <Package className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                <p>Vous n'avez pas encore passé de commande.</p>
-                <a
-                  href="/products"
-                  className="text-red-600 font-medium hover:underline mt-2 inline-block"
-                >
-                  Découvrir nos produits
-                </a>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 text-gray-600">
-                    <tr>
-                      <th className="px-6 py-3 text-left font-medium">
-                        Commande
-                      </th>
-                      <th className="px-6 py-3 text-left font-medium">Date</th>
-                      <th className="px-6 py-3 text-left font-medium">
-                        Articles
-                      </th>
-                      <th className="px-6 py-3 text-left font-medium">Total</th>
-                      <th className="px-6 py-3 text-left font-medium">Statut</th>
-                      <th className="px-6 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {orders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          #{order.display_id}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">
-                          {formatDate(order.created_at as string)}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">
-                          {order.items?.length || 0}
-                        </td>
-                        <td className="px-6 py-4 font-semibold text-gray-900">
-                          {formatCurrency(order.total, order.currency_code)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                              order.status
-                            )}`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <a
-                            href={`/account/orders/details/${order.id}`}
-                            className="text-red-600 hover:underline text-sm font-medium"
-                          >
-                            Détails
-                          </a>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <div className="p-6">
+              <OrdersSection orders={orders ?? null} isLoading={ordersLoading} />
+            </div>
           </div>
         </div>
       </div>
