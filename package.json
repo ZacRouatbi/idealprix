@@ -1,7 +1,7 @@
 {
   "name": "idealprix-backend",
   "private": false,
-  "packageManager": "npm@11.12.0",
+  "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": ">=20"
   },
@@ -15,12 +15,6 @@
     "backend:dev": "turbo dev --filter=@dtc/backend",
     "storefront:dev": "turbo dev --filter=@dtc/storefront"
   },
-  "pnpm": {
-    "overrides": {
-      "@types/react": "19.0.5",
-      "@types/react-dom": "19.0.5"
-    }
-  },
   "devDependencies": {
     "turbo": "^2.0.14",
     "prettier": "^3.2.5"
@@ -29,7 +23,10 @@
     "apps/**",
     "!apps/backend/.medusa/**"
   ],
-  "overrides": {
-    "ajv": "^8.0.0"
+  "pnpm": {
+    "overrides": {
+      "ajv": "^8.0.0",
+      "@medusajs/icons": "2.13.4"
+    }
   }
 }

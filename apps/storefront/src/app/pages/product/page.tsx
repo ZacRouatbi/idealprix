@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, Link } from "react-router";
 import {
   ChevronRight, ChevronLeft, ChevronDown, ChevronUp,
   Heart, ShoppingCart, Star, Minus, Plus, Check,

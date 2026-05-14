@@ -1,6 +1,6 @@
 "use client"
 
-import { Link, useParams } from "react-router"
+import { Link, useParams } from "react-router";
 import React from "react"
 
 const LocalizedClientLink = ({

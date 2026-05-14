@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams, Link } from "react-router";
 import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { formatPrice } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
