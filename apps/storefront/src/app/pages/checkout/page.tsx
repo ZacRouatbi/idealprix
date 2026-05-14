@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import {
   ChevronRight,
@@ -53,36 +53,68 @@ async function medusaFetch<T>(path: string, options: RequestInit = {}): Promise<
 }
 
 async function ensureMedusaCart(
-  localItems: { variantId: string; quantity: number }[]
+   localItems: { variantId: string; quantity: number }[]
 ): Promise<string> {
-  const stored = sessionStorage.getItem("medusa_cart_id");
-  if (stored) {
-    try {
-      await medusaFetch(`/store/carts/${stored}`);
-      return stored;
-    } catch {
-      sessionStorage.removeItem("medusa_cart_id");
+  let stored = sessionStorage.getItem("medusa_cart_id");
+
+  // Validate stored cart or create new one
+  if (!stored) {
+    const { regions } = await medusaFetch<{ regions: { id: string }[] }>("/store/regions");
+    if (!regions?.length) throw new Error("Aucune région disponible.");
+
+    const { cart } = await medusaFetch<{ cart: { id: string } }>("/store/carts", {
+      method: "POST",
+      body: JSON.stringify({ region_id: regions[0].id }),
+    });
+    stored = cart.id;
+    sessionStorage.setItem("medusa_cart_id", stored);
+  }
+
+  // Verify cart still exists
+  try {
+    await medusaFetch(`/store/carts/${stored}`);
+  } catch {
+    sessionStorage.removeItem("medusa_cart_id");
+    return ensureMedusaCart(localItems);
+  }
+
+  // Fetch cart with line items (including line item IDs)
+  const { cart } = await medusaFetch<{
+    cart: {
+      items: { id: string; variant_id: string; quantity: number }[];
+    };
+  }>(`/store/carts/${stored}`);
+
+  const medusaItems = new Map(
+    cart.items.map((item) => [`${item.variant_id}`, { id: item.id, quantity: item.quantity }])
+  );
+
+  // Add or update items
+  for (const item of localItems) {
+    const existing = medusaItems.get(item.variantId);
+    if (existing && existing.quantity !== item.quantity) {
+      await medusaFetch(`/store/carts/${stored}/line-items/${existing.id}`, {
+        method: "POST",
+        body: JSON.stringify({ quantity: item.quantity }),
+      }).catch(() => {});
+    } else if (!existing) {
+      await medusaFetch(`/store/carts/${stored}/line-items`, {
+        method: "POST",
+        body: JSON.stringify({ variant_id: item.variantId, quantity: item.quantity }),
+      }).catch(() => {});
     }
   }
 
-  const { regions } = await medusaFetch<{ regions: { id: string }[] }>("/store/regions");
-  if (!regions?.length) throw new Error("Aucune région disponible.");
-
-  const { cart } = await medusaFetch<{ cart: { id: string } }>("/store/carts", {
-    method: "POST",
-    body: JSON.stringify({ region_id: regions[0].id }),
-  });
-
-  sessionStorage.setItem("medusa_cart_id", cart.id);
-
-  for (const item of localItems) {
-    await medusaFetch(`/store/carts/${cart.id}/line-items`, {
-      method: "POST",
-      body: JSON.stringify({ variant_id: item.variantId, quantity: item.quantity }),
-    }).catch(() => {});
+  // Remove items that are no longer in local cart
+  for (const [variantId, item] of medusaItems) {
+    if (!localItems.find((i) => i.variantId === variantId)) {
+      await medusaFetch(`/store/carts/${stored}/line-items/${item.id}`, {
+        method: "DELETE",
+      }).catch(() => {});
+    }
   }
 
-  return cart.id;
+  return stored;
 }
 
 export default function CheckoutPage() {
@@ -113,6 +145,24 @@ export default function CheckoutPage() {
     { n: 2, label: "Livraison" },
     { n: 3, label: "Paiement" },
   ];
+
+  // Sync local cart with Medusa cart on checkout page load
+  useEffect(() => {
+    const syncCart = async () => {
+      try {
+        const localItems = cart.items.map((item) => ({
+          variantId: item.product.variant_id ?? item.product.id,
+          quantity: item.quantity,
+        }));
+        if (localItems.length > 0) {
+          await ensureMedusaCart(localItems);
+        }
+      } catch (err) {
+        console.error("Failed to sync cart:", err);
+      }
+    };
+    syncCart();
+  }, []);
 
   const handleAddressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
