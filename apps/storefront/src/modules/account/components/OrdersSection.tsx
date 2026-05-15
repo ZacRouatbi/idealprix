@@ -9,6 +9,43 @@
 
 import { useState } from "react";
 import type { MedusaOrder } from "@lib/data/medusa";
+import type { HttpTypes } from "@medusajs/types";
+
+function adaptOrder(order: HttpTypes.StoreOrder): MedusaOrder {
+  return {
+    id: order.id,
+    display_id: order.display_id ?? parseInt(order.id.slice(-8), 16),
+    status: order.status,
+    payment_status: order.payment_status ?? "not_paid",
+    fulfillment_status: order.fulfillment_status ?? "not_fulfilled",
+    total: order.total,
+    subtotal: order.subtotal ?? 0,
+    shipping_total: order.shipping_total ?? 0,
+    tax_total: order.tax_total ?? 0,
+    currency_code: order.currency_code,
+    created_at: order.created_at,
+    items: (order.items ?? []).map((item) => ({
+      id: item.id,
+      title: item.product?.title ?? item.title ?? "Unknown",
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      thumbnail: item.product?.thumbnail ?? item.thumbnail,
+      variant: item.variant
+        ? {
+            title: item.variant.title ?? "",
+            sku: item.variant.sku,
+          }
+        : undefined,
+      product: item.product
+        ? {
+            title: item.product.title ?? "",
+            thumbnail: item.product.thumbnail,
+          }
+        : undefined,
+    })),
+    shipping_address: order.shipping_address,
+  };
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -251,11 +288,19 @@ function OrderCard({ order }: { order: MedusaOrder }) {
 // ─── Main Export ─────────────────────────────────────────────────────────────
 
 interface OrdersSectionProps {
-  orders: MedusaOrder[] | null;
+  orders: MedusaOrder[] | HttpTypes.StoreOrder[] | null;
   isLoading?: boolean;
 }
 
 export default function OrdersSection({ orders, isLoading }: OrdersSectionProps) {
+  const adaptedOrders: MedusaOrder[] = (orders ?? []).map((order) => {
+    // Check if it's an HttpTypes.StoreOrder (has item.unit_price directly)
+    if ("items" in order && order.items && "unit_price" in (order.items?.[0] || {})) {
+      return adaptOrder(order as HttpTypes.StoreOrder);
+    }
+    return order as MedusaOrder;
+  });
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -275,7 +320,7 @@ export default function OrdersSection({ orders, isLoading }: OrdersSectionProps)
     );
   }
 
-  if (!orders || orders.length === 0) {
+  if (!adaptedOrders || adaptedOrders.length === 0) {
     return (
       <div className="text-center py-16 border border-dashed border-[#E8E6E1] rounded-xl">
         <div className="w-14 h-14 rounded-full bg-[#F9F8F7] flex items-center justify-center mx-auto mb-4">
@@ -294,7 +339,7 @@ export default function OrdersSection({ orders, isLoading }: OrdersSectionProps)
 
   return (
     <div className="space-y-3">
-      {orders.map((order) => (
+      {adaptedOrders.map((order) => (
         <OrderCard key={order.id} order={order} />
       ))}
     </div>

@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCart } from "../../../lib/context/CartContext";
+import { useAuth } from "../../../lib/context/AuthContext";
 import { formatPrice } from "../../../lib/data/products";
 
 type Step = 1 | 2 | 3;
@@ -19,6 +20,7 @@ type PaymentMethod = "cod" | "card";
 type AddressForm = {
   fullName: string;
   phone: string;
+  email: string;
   address: string;
   city: string;
   postalCode: string;
@@ -120,12 +122,13 @@ async function ensureMedusaCart(
 
 export default function CheckoutPage() {
   const { cart, subtotal, clearCart } = useCart();
+  const { customer, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [currentStep, setCurrentStep] = useState<Step>(1);
-  const [address, setAddress] = useState<AddressForm>({
-    fullName: "", phone: "", address: "", city: "", postalCode: "", notes: "",
-  });
+const [currentStep, setCurrentStep] = useState<Step>(1);
+   const [address, setAddress] = useState<AddressForm>({
+     fullName: "", phone: "", email: "", address: "", city: "", postalCode: "", notes: "",
+   });
   const [shippingOptions, setShippingOptions] = useState<
     { id: string; name: string; amount: number; shipping_profile_id?: string }[]
   >([]);
@@ -171,47 +174,68 @@ export default function CheckoutPage() {
      syncCart();
    }, []);
 
+// Auto-fill address from logged-in customer's profile
+   useEffect(() => {
+     if (!authLoading && customer && address.fullName === "" && address.phone === "") {
+       // Get default shipping address from customer's addresses
+       const defaultAddress = customer.addresses?.find((a: any) => a.is_default_shipping) || customer.addresses?.[0];
+       
+       const firstName = customer.first_name || "";
+       const lastName = customer.last_name || "";
+       
+       setAddress(prev => ({
+         ...prev,
+         fullName: prev.fullName || `${firstName} ${lastName}`.trim(),
+         phone: prev.phone || customer.phone || "",
+         email: prev.email || customer.email || "",
+         address: prev.address || defaultAddress?.address_1 || "",
+         city: prev.city || defaultAddress?.city || "",
+         postalCode: prev.postalCode || defaultAddress?.postal_code || "",
+       }));
+     }
+   }, [authLoading, customer, address]);
+
 const handleAddressSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
      setError(null);
      setIsLoading(true);
-     try {
-       const localItems: { variantId: string; quantity: number }[] = [];
-       for (const item of cart.items) {
-         if (item.product.variant_id) {
-           localItems.push({ variantId: item.product.variant_id, quantity: item.quantity });
-         }
-       }
-       const cartId = await ensureMedusaCart(localItems);
+try {
+        const localItems: { variantId: string; quantity: number }[] = [];
+        for (const item of cart.items) {
+          if (item.product.variant_id) {
+            localItems.push({ variantId: item.product.variant_id, quantity: item.quantity });
+          }
+        }
+        const cartId = await ensureMedusaCart(localItems);
 
-      const nameParts = address.fullName.trim().split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || firstName;
+const nameParts = address.fullName.trim().split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || firstName;
 
-      await medusaFetch(`/store/carts/${cartId}`, {
-        method: "POST",
-        body: JSON.stringify({
-          email: `${firstName.toLowerCase()}.${Date.now()}@checkout.local`,
-          shipping_address: {
-            first_name: firstName,
-            last_name: lastName,
-            address_1: address.address,
-            city: address.city,
-            postal_code: address.postalCode || "0000",
-            country_code: "tn",
-            phone: address.phone,
-          },
-          billing_address: {
-            first_name: firstName,
-            last_name: lastName,
-            address_1: address.address,
-            city: address.city,
-            postal_code: address.postalCode || "0000",
-            country_code: "tn",
-            phone: address.phone,
-          },
-        }),
-      });
+        await medusaFetch(`/store/carts/${cartId}`, {
+          method: "POST",
+          body: JSON.stringify({
+            email: address.email,
+            shipping_address: {
+             first_name: firstName,
+             last_name: lastName,
+             address_1: address.address,
+             city: address.city,
+             postal_code: address.postalCode || "0000",
+             country_code: "tn",
+             phone: address.phone,
+           },
+           billing_address: {
+             first_name: firstName,
+             last_name: lastName,
+             address_1: address.address,
+             city: address.city,
+             postal_code: address.postalCode || "0000",
+             country_code: "tn",
+             phone: address.phone,
+           },
+         }),
+       });
 
       const { shipping_options } = await medusaFetch<{
         shipping_options: { id: string; name: string; amount: number; shipping_profile_id?: string }[];
@@ -502,6 +526,13 @@ const result = await medusaFetch<{
                     <input type="tel" required value={address.phone}
                       onChange={(e) => setAddress({ ...address, phone: e.target.value })}
                       placeholder="+216 XX XXX XXX"
+                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1E1E1E] mb-1.5">Email</label>
+                    <input type="email" required value={address.email}
+                      onChange={(e) => setAddress({ ...address, email: e.target.value })}
+                      placeholder="email@exemple.com"
                       className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
                   </div>
                   <div>

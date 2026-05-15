@@ -3,11 +3,10 @@ import { User, Package, Mail, MapPin, Phone, Save } from "lucide-react";
 import { HttpTypes } from "@medusajs/types";
 import { useAuth } from "@lib/context/AuthContext";
 import OrdersSection from "@modules/account/components/OrdersSection";
-import type { MedusaOrder } from "@lib/data/medusa";
 
 interface AccountTemplateProps {
   customer?: HttpTypes.StoreCustomer | null;
-  orders?: MedusaOrder[] | null;
+  orders?: HttpTypes.StoreOrder[] | null;
   ordersLoading?: boolean;
 }
 

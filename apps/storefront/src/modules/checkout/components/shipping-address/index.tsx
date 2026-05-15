@@ -45,6 +45,11 @@ const ShippingAddress = ({
     [customer?.addresses, countriesInRegion]
   )
 
+  // Get customer's default shipping address
+  const defaultShippingAddress = useMemo(() => {
+    return customer?.addresses.find((a) => a.is_default_shipping)
+  }, [customer?.addresses])
+
   const setFormAddress = (
     address?: HttpTypes.StoreCartAddress,
     email?: string
@@ -73,15 +78,39 @@ const ShippingAddress = ({
   }
 
   useEffect(() => {
-    // Ensure cart is not null and has a shipping_address before setting form data
+    // If cart already has shipping address, use it
     if (cart && cart.shipping_address) {
       setFormAddress(cart?.shipping_address, cart?.email)
     }
-
-    if (cart && !cart.email && customer?.email) {
-      setFormAddress(undefined, customer.email)
+    // If logged-in customer with no cart address, auto-fill from saved addresses
+    else if (customer && !cart?.shipping_address) {
+      // Use default shipping address or first in-region address
+      const addressToUse = defaultShippingAddress || addressesInRegion?.[0]
+      if (addressToUse) {
+        setFormAddress(
+          addressToUse as unknown as HttpTypes.StoreCartAddress,
+          customer?.email || undefined
+        )
+      }
+      // Auto-fill email from customer profile
+      if (customer?.email) {
+        setFormAddress(undefined, customer.email)
+      }
+      // Auto-fill first name and last name from customer profile if not already set
+      if (!formData["shipping_address.first_name"] && customer.first_name) {
+        setFormData((prev) => ({
+          ...prev,
+          "shipping_address.first_name": customer.first_name || "",
+        }))
+      }
+      if (!formData["shipping_address.last_name"] && customer.last_name) {
+        setFormData((prev) => ({
+          ...prev,
+          "shipping_address.last_name": customer.last_name || "",
+        }))
+      }
     }
-  }, [cart]) // Add cart as a dependency
+  }, [cart, customer, defaultShippingAddress, addressesInRegion])
 
   const handleChange = (
     e: React.ChangeEvent<

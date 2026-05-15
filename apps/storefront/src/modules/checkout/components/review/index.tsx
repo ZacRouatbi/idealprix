@@ -3,7 +3,7 @@
 import { Heading, Text, clx } from "@modules/common/components/ui"
 
 import PaymentButton from "../payment-button"
-import { useSearchParams } from "react-router"
+import { useSearchParams } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 
 const Review = ({ cart }: { cart: HttpTypes.StoreCart }) => {
