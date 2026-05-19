@@ -41,6 +41,20 @@ export interface ProductFilters extends FilterParams {
   in_stock?: boolean
 }
 
+async function getSubcategoryIds(parentId: string): Promise<string[]> {
+  const result = await db.query(
+    `WITH RECURSIVE category_tree AS (
+      SELECT id, parent_id FROM categories WHERE id = $1
+      UNION ALL
+      SELECT c.id, c.parent_id
+      FROM categories c
+      INNER JOIN category_tree ct ON c.parent_id = ct.id
+    )
+    SELECT id FROM category_tree WHERE id != $1`
+  , [parentId])
+  return result.rows.map(r => r.id)
+}
+
 export class ProductService {
   /**
    * Optimized pagination with keyset-style approach for large datasets
@@ -70,9 +84,12 @@ export class ProductService {
       params.push(filters.cursor)
     }
 
+    // If category_id is provided, also include products from subcategories
     if (filters?.category_id) {
-      conditions.push(`p.category_id = $${paramIndex++}`)
-      params.push(filters.category_id)
+      const subcategoryIds = await getSubcategoryIds(filters.category_id)
+      const allCategoryIds = [filters.category_id, ...subcategoryIds]
+      conditions.push(`p.category_id = ANY($${paramIndex++})`)
+      params.push(allCategoryIds)
     }
 
     if (filters?.is_active !== undefined) {
@@ -213,7 +230,7 @@ export class ProductService {
     return result.rows[0] as Product
   }
 
-async updateProduct(id: string, data: Partial<Product>): Promise<Product> {
+  async updateProduct(id: string, data: Partial<Product>): Promise<Product> {
     const fields: string[] = []
     const values: any[] = []
     let paramIndex = 1

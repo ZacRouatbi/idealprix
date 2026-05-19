@@ -29,14 +29,31 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '50')), 100)
   const offset = Math.max(0, parseInt(searchParams.get('offset') || '0'))
   
-  const filters = {
+  const categoryIds = searchParams.get('category_id') || undefined
+  const filters: any = {
     limit,
     offset,
     search: searchParams.get('search') || undefined,
-    category_id: searchParams.get('category_id') || undefined,
+    category_id: categoryIds,
     is_active: true,
   }
-
+  
+  const slug = searchParams.get('slug')
+  if (slug) {
+    const product = await productService.getProductBySlug(slug)
+    if (product) {
+      return addCorsHeaders(NextResponse.json({
+        data: [product],
+        count: 1,
+        limit: 1,
+        offset: 0,
+        page: 1,
+        totalPages: 1,
+      }), request)
+    }
+    return addCorsHeaders(NextResponse.json({ data: [], count: 0 }), request)
+  }
+  
   try {
     const result = await productService.listProducts(filters)
     

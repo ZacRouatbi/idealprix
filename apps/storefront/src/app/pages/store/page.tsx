@@ -168,23 +168,7 @@ export default function StorePage() {
   // Build category hierarchy for foldable menu
   const [categoryHierarchy, setCategoryHierarchy] = useState<Record<string, { id: string; name: string; handle: string; children: { id: string; name: string; handle: string }[] }>>({});
   
-  useEffect(() => {
-    fetchCategories().then((cats) => {
-      const hierarchy: Record<string, { id: string; name: string; handle: string; children: { id: string; name: string; handle: string }[] }> = {};
-      const childMap: Record<string, { id: string; name: string; handle: string }[]> = {};
-      
-      cats.forEach(c => {
-        const parentId = c.parent_id || c.parent_id;
-        if (parentId) {
-          if (!childMap[parentId]) childMap[parentId] = [];
-          childMap[parentId].push({ id: c.id, name: c.name, handle: c.slug });
-        } else {
-          hierarchy[c.id] = { id: c.id, name: c.name, handle: c.slug, children: childMap[c.id] || [] };
-        }
-      });
-      setCategoryHierarchy(hierarchy);
-    });
-  }, []);
+  
 
   const availableSubcategories = backendSubcategories.length > 0 
     ? [...new Set(backendSubcategories.map(c => c.name))].sort()
@@ -271,41 +255,7 @@ export default function StorePage() {
           <span className="text-[#1E1E1E] font-medium">{pageTitle}</span>
         </nav>
 
-        {/* Category sidebar with foldable subcategories */}
-        <div className="hidden lg:block mb-6">
-          <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
-            <h3 className="text-sm font-semibold text-[#1E1E1E] mb-3" style={{ fontFamily: "Poppins, sans-serif" }}>Catégories</h3>
-            {Object.values(categoryHierarchy).map(cat => (
-              <div key={cat.id} className="mb-1">
-                <button
-                  onClick={() => toggleCategory(cat.id)}
-                  className="flex items-center gap-2 w-full text-left text-sm text-[#1E1E1E] hover:text-[#D4302A] transition-colors"
-                >
-                  {cat.children && cat.children.length > 0 ? (
-                    expandedCategories.has(cat.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />
-                  ) : <span className="w-3" />}
-                  <Link to={`/products?category=${cat.handle}`} className="font-medium">
-                    {cat.name}
-                  </Link>
-                  <span className="text-xs text-[#717182]">({cat.children?.length || 0})</span>
-                </button>
-                {expandedCategories.has(cat.id) && cat.children && (
-                  <div className="ml-5 mt-1 space-y-1">
-                    {cat.children.map(child => (
-                      <Link
-                        key={child.id}
-                        to={`/products?category=${cat.handle}&subcategory=${child.handle}`}
-                        className="block text-xs text-[#717182] hover:text-[#D4302A] transition-colors py-0.5"
-                      >
-                        {child.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">

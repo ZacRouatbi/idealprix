@@ -57,6 +57,19 @@ export interface MedusaCategoriesResponse {
   product_categories: MedusaCategory[]
 }
 
+/* ─── Backend URL for constructing absolute image URLs ─── */
+const BACKEND_URL = (import.meta as any).env?.VITE_BACKEND_API_URL?.replace('/api', '') || 'http://localhost:3000'
+
+/* ─── Placeholder image ─── */
+const placeholderImage = 'https://via.placeholder.com/400x400?text=Produit'
+
+/* ─── Helper to convert relative image URL to absolute ─── */
+function toAbsoluteUrl(path: string): string {
+  if (!path) return placeholderImage
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  return `${BACKEND_URL}${path}`
+}
+
 /* ─── Fetch helpers ─── */
 export async function fetchProducts(params: {
   limit?: number
@@ -76,37 +89,37 @@ export async function fetchProducts(params: {
   const response = await apiFetchProducts({
     limit: params.limit,
     offset: params.offset,
-    category_id: typeof params.category_id === 'string' ? params.category_id : params.category_id?.[0],
+    category_id: typeof params.category_id === 'string' ? params.category_id : params.category_id?.[0] || undefined,
     search: params.handle ? undefined : undefined,
   })
 
   // Transform backend products to Medusa-like format
   const medusaProducts = response.data.map(p => ({
-    id: p.id,
-    title: p.name,
-    handle: p.slug,
-    description: p.description,
-    status: p.is_active ? 'published' : 'draft',
-    thumbnail: p.image_url || '',
-    images: p.image_url ? [{ url: p.image_url }] : [{ url: '' }],
-    variants: p.price ? [{
-      id: p.id,
-      title: 'Default',
-      prices: [{ amount: p.price, currency_code: 'TND' }],
-      inventory_quantity: p.stock_quantity,
-    }] : [],
-    categories: p.category ? [{
-      id: p.category.id,
-      name: p.category.name,
-      handle: p.category.slug,
-    }] : [],
-    collection: undefined,
-    tags: [],
-    metadata: {},
-    created_at: p.created_at,
-    price: p.price,
-    compare_price: p.compare_price,
-  }))
+     id: p.id,
+     title: p.name,
+     handle: p.slug,
+     description: p.description,
+     status: p.is_active ? 'published' : 'draft',
+     thumbnail: toAbsoluteUrl(p.image_url),
+     images: p.image_url ? [{ url: toAbsoluteUrl(p.image_url) }] : [{ url: placeholderImage }],
+     variants: p.price ? [{
+       id: p.id,
+       title: 'Default',
+       prices: [{ amount: p.price, currency_code: 'TND' }],
+       inventory_quantity: p.stock_quantity,
+     }] : [],
+     categories: p.category ? [{
+       id: p.category.id,
+       name: p.category.name,
+       handle: p.category.slug,
+     }] : [],
+     collection: undefined,
+     tags: [],
+     metadata: {},
+     created_at: p.created_at,
+     price: p.price,
+     compare_price: p.compare_price,
+   }))
 
   return {
     products: medusaProducts,
@@ -118,11 +131,8 @@ export async function fetchProducts(params: {
 
 export async function fetchProductByHandle(handle: string): Promise<MedusaProduct | null> {
   try {
-    const response = await apiFetchProducts({ search: handle })
-    // First try to find by slug
-    let product = response.data.find(p => p.slug === handle)
-    // If not found by slug, try by name (for backward compatibility)
-    if (!product) product = response.data.find(p => p.name.toLowerCase() === handle.toLowerCase())
+    const response = await apiFetchProducts({ slug: handle })
+    const product = response.data[0]
     if (!product) return null
 
   return {
@@ -131,8 +141,8 @@ export async function fetchProductByHandle(handle: string): Promise<MedusaProduc
     handle: product.slug,
     description: product.description,
     status: product.is_active ? 'published' : 'draft',
-    thumbnail: product.image_url || '',
-    images: product.image_url ? [{ url: product.image_url }] : [{ url: '' }],
+    thumbnail: toAbsoluteUrl(product.image_url),
+    images: product.image_url ? [{ url: toAbsoluteUrl(product.image_url) }] : [{ url: placeholderImage }],
     variants: product.price ? [{
       id: product.id,
       title: 'Default',
@@ -173,7 +183,7 @@ export async function fetchCategories(): Promise<MedusaCategory[]> {
         description: c.description,
         parent_category_id: c.parent_id,
         parent_id: c.parent_id,
-        image: c.image_url ? { url: c.image_url } : null,
+        image: c.image_url ? { url: toAbsoluteUrl(c.image_url) } : null,
         category_children: []
       })
     })
@@ -211,7 +221,7 @@ export async function fetchSubcategories(categoryHandle: string): Promise<Medusa
       description: c.description,
       parent_category_id: c.parent_id,
       parent_id: c.parent_id,
-      image: c.image_url ? { url: c.image_url } : null,
+      image: c.image_url ? { url: toAbsoluteUrl(c.image_url) } : null,
     }))
 }
 

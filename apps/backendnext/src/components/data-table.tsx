@@ -136,11 +136,11 @@ export function DataTable({
                       ))}
                     </tr>
                     {hasChildren && isExpanded && (
-                      <>
-                        {children.map((child) => (
-                          <tr key={child.id} className="border-b bg-muted/20">
-                            {columns.map((col) => (
-                              <td key={col.id} className="p-4 align-middle" style={{ paddingLeft: col.id === 'name' ? '48px' : undefined }}>
+                      <Fragment key={`children-${row.id}`}>
+                        {children.map((child, index) => (
+                          <tr key={`child-${row.id}-${child.id ?? child.name ?? index}`} className="border-b bg-muted/20">
+                            {columns.map((col, colIndex) => (
+                              <td key={`${row.id}-${col.id}-${colIndex}`} className="p-4 align-middle" style={{ paddingLeft: col.id === 'name' ? '48px' : undefined }}>
                                 {flexRender(
                                   col.cell as any,
                                   getChildContext(child, col)
@@ -149,7 +149,7 @@ export function DataTable({
                             ))}
                           </tr>
                         ))}
-                      </>
+                      </Fragment>
                     )}
                   </Fragment>
                 )

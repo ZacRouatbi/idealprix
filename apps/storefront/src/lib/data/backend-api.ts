@@ -68,6 +68,7 @@ export async function fetchProducts(params?: {
   offset?: number
   search?: string
   category_id?: string
+  slug?: string
   is_active?: boolean
 }): Promise<{ data: Product[]; count: number; totalPages: number }> {
   const qs = new URLSearchParams()
@@ -75,6 +76,7 @@ export async function fetchProducts(params?: {
   if (params?.offset) qs.set('offset', String(params.offset))
   if (params?.search) qs.set('search', params.search)
   if (params?.category_id) qs.set('category_id', params.category_id)
+  if (params?.slug) qs.set('slug', params.slug)
   if (params?.is_active !== undefined) qs.set('is_active', String(params.is_active))
 
   return apiClient<{ data: Product[]; count: number; totalPages: number }>(`/public/products?${qs.toString()}`)

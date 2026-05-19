@@ -1,4 +1,4 @@
-import { fetchProductByHandle, normaliseProduct } from "@lib/data/medusa"
+import { fetchProductByHandle, normaliseProduct } from "@lib/data/backend-adapter"
 import ProductActions from "@modules/products/components/product-actions"
 import { useEffect, useState } from "react"
 
