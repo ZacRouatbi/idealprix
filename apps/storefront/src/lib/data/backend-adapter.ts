@@ -89,7 +89,7 @@ export async function fetchProducts(params: {
   const response = await apiFetchProducts({
     limit: params.limit,
     offset: params.offset,
-    category_id: typeof params.category_id === 'string' ? params.category_id : params.category_id?.[0] || undefined,
+    category_id: typeof params.category_id === 'string' ? params.category_id : params.category_id?.join(','),
     search: params.handle ? undefined : undefined,
   })
 

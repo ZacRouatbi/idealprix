@@ -3,13 +3,14 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { formatPrice, HERO_IMAGE } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
-import { fetchCategories } from "../../../lib/data/backend-adapter";
+import { fetchCategories, fetchProducts } from "../../../lib/data/backend-adapter";
 import { useEffect, useState } from "react";
 import ProductCard from "../../../modules/store/components/ProductCard";
+import CategoryCarousel from "../../../modules/home/components/category-carousel";
 
 export default function HomePage() {
   const { products, loading } = useProducts({ limit: 8 });
-  const { categories, loading: categoriesLoading } = useCategories(3);
+  const { categories, loading: categoriesLoading } = useCategories(100);
 
   const popularProducts = products
     .filter((p) => p.inStock)
@@ -69,7 +70,7 @@ export default function HomePage() {
     image: cat.image?.url || HERO_IMAGE,
     count: counts[cat.handle] || 0,
   }));
- 
+  
   return (
     <main style={{ fontFamily: "Inter, sans-serif" }}>
       {/* Hero */}
@@ -98,41 +99,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
- 
-{/* Categories */}
+
+{/* Categories Carousel */}
       {!categoriesLoading && !countsLoading && enrichedCategories.length > 0 && (
-        <section className="bg-[#F0F3FA] w-full">
-          <div className="max-w-7xl mx-auto px-4 py-10">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {enrichedCategories.map((cat) => (
-                <Link
-                  key={cat.handle}
-                  to={`/products?category=${cat.handle}`}
-                  className="group block relative overflow-hidden rounded-2xl border border-[#E5E5E5] hover:shadow-md transition-shadow"
-                >
-                  {/* Category image as header/background */}
-                  <div className="relative h-32 w-full">
-                    <img
-                      src={cat.image}
-                      alt={cat.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <h3 className="absolute bottom-3 left-4 font-semibold text-white text-lg" style={{ fontFamily: "Poppins, sans-serif" }}>
-                      {cat.title}
-                    </h3>
-                  </div>
-                  {/* Product count at bottom */}
-                  <div className="bg-white px-4 py-2.5">
-                    <p className="text-xs text-[#717182]">
-                      {cat.count} produit{cat.count !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        <CategoryCarousel categories={enrichedCategories} />
       )}
  
       {/* Popular products */}
