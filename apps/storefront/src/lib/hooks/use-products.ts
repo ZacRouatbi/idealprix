@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { fetchProducts, fetchProductByHandle, normaliseProduct } from "@lib/data/medusa";
+import { fetchProducts, fetchProductByHandle, normaliseProduct } from "@lib/data/backend-adapter";
 import type { Product } from "@lib/data/products";
 
 /* ─── List hook ─────────────────────────────── */
@@ -8,7 +8,10 @@ export function useProducts(params: {
   offset?: number;
   category_handle?: string | string[];
   category_id?: string | string[];
+  page?: number;
 } = {}) {
+  const limit = params.limit || 12;
+  const offset = params.offset || (params.page ? (params.page - 1) * limit : 0);
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -20,7 +23,7 @@ export function useProducts(params: {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchProducts({ limit: 100, ...params });
+      const res = await fetchProducts({ limit, offset, ...params });
       const debug = (import.meta as any).env?.VITE_MEDUSA_DEBUG === "true";
       if (debug) console.debug('[useProducts] params', params, 'fetched count', res.count, 'ids', res.products.map(p => p.id));
       setProducts(res.products.map(normaliseProduct));

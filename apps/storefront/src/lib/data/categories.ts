@@ -1,60 +1,38 @@
-import { sdk } from "@lib/config"
-import { HttpTypes } from "@medusajs/types"
-import { getCacheOptions } from "./cookies"
+import { fetchCategories, type MedusaCategory } from './backend-adapter'
 
-export const listCategories = async (query?: Record<string, unknown>) => {
-  const next = {
-    ...(await getCacheOptions("categories")),
-  }
+export { fetchCategories, type MedusaCategory }
 
-  const limit = query?.limit || 100
-
-  return sdk.client
-    .fetch<{ product_categories: HttpTypes.StoreProductCategory[] }>(
-      "/store/product-categories",
-      {
-        query: {
-          fields: "category_children,products,parent_category,parent_category.parent_category",
-          limit,
-          ...query,
-        },
-        next,
-        cache: "force-cache",
-      }
-    )
-    .then((res) => {
-      try {
-        // Debugging: log raw response to help diagnose missing categories
-        // Server-side only
-        console.log("DEBUG: listCategories response:", JSON.stringify(res));
-      } catch (e) {}
-      return res.product_categories
-    })
+export interface CategoryNode extends MedusaCategory {
+  children?: CategoryNode[]
 }
 
-export const getCategoryByHandle = async (categoryHandle: string[]) => {
-  const handle = encodeURIComponent(categoryHandle.join("/"))
+export const listCategories = async (query?: Record<string, unknown>): Promise<CategoryNode[]> => {
+  const limit = (query?.limit as number) || 100
+  
+  const categories = await fetchCategories()
+  
+  // Build hierarchy: add children to parent categories
+  const categoryMap = new Map<string, CategoryNode>()
+  categories.forEach(c => {
+    categoryMap.set(c.id, { ...c, children: [] })
+  })
 
-  const next = {
-    ...(await getCacheOptions("categories")),
-  }
+  const rootCategories: CategoryNode[] = []
+  categoryMap.forEach(cat => {
+    const parentId = cat.parent_category_id || cat.parent_id
+    if (parentId && categoryMap.has(parentId)) {
+      const parent = categoryMap.get(parentId)!
+      parent.children!.push(cat)
+    } else {
+      rootCategories.push(cat)
+    }
+  })
 
-  return sdk.client
-    .fetch<HttpTypes.StoreProductCategoryListResponse>(
-      `/store/product-categories`,
-      {
-        query: {
-          fields: "category_children,products,parent_category",
-          handle,
-        },
-        next,
-        cache: "force-cache",
-      }
-    )
-    .then((res) => {
-      try {
-        console.log("DEBUG: getCategoryByHandle response:", JSON.stringify(res));
-      } catch (e) {}
-      return res.product_categories[0]
-    })
+  return rootCategories
+}
+
+export const getCategoryByHandle = async (categoryHandle: string | string[]): Promise<MedusaCategory | null> => {
+  const handle = Array.isArray(categoryHandle) ? categoryHandle[categoryHandle.length - 1] : categoryHandle
+  const categories = await fetchCategories()
+  return categories.find(c => c.handle === handle) || null
 }

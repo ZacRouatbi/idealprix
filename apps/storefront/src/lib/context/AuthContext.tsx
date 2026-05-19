@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomer] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const PUBLISHABLE_KEY = import.meta.env.VITE_MEDUSA_PUBLISHABLE_KEY || "";
+  const BACKEND_URL = (import.meta as any).env?.VITE_BACKEND_API_URL || 'http://localhost:3000/api'
 
   const setToken = (newToken: string | null) => {
     if (newToken) {
@@ -45,15 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch("/store/customers/me", {
+      const res = await fetch(`${BACKEND_URL}/auth`, {
+        method: 'GET',
         headers: {
-          "x-publishable-api-key": PUBLISHABLE_KEY,
+          "Content-Type": "application/json",
           "Authorization": `Bearer ${storedToken}`,
         },
+        credentials: 'include',
       });
       if (res.ok) {
         const data = await res.json();
-        setCustomer(data.customer);
+        setCustomer(data.user);
         setToken(storedToken);
       } else {
         setToken(null);

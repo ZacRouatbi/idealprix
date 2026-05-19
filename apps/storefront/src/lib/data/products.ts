@@ -44,9 +44,13 @@ export type Category = {
 };
 
 export const formatPrice = (price: number): string => {
+  // Price is in millimes (1000 = 1 TND)
   const dinars = Math.floor(price / 1000);
   const millimes = price % 1000;
-  return `${dinars},${String(millimes).padStart(3, "0")} TND`;
+  if (millimes > 0) {
+    return `${dinars},${String(millimes).padStart(3, "0")} TND`;
+  }
+  return `${dinars},000 TND`;
 };
 
 /* ── Static image constants (still used in UI) ── */

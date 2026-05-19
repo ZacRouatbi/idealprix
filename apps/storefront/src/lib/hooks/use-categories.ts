@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchCategories, fetchSubcategories, MedusaCategory } from "@lib/data/medusa";
+import { fetchCategories, fetchSubcategories, type MedusaCategory } from "@lib/data/backend-adapter";
 
 export function useCategories(limit: number = 3, categoryHandle?: string) {
   const [categories, setCategories] = useState<MedusaCategory[]>([]);

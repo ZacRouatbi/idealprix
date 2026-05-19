@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, Link } from "react-router";
-import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle } from "lucide-react";
+import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { formatPrice } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
-import { fetchProducts, fetchCategories, medusaFetch } from "../../../lib/data/medusa";
+import { fetchProducts, fetchCategories, fetchSubcategories } from "../../../lib/data/backend-adapter";
 import ProductCard from "../../../modules/store/components/ProductCard";
 import FilterSidebar from "../../../modules/store/components/FilterSidebar";
 
@@ -98,22 +98,29 @@ export default function StorePage() {
       setAllCategoryIds([]);
       return;
     }
-    // Get category ID from handle
-    medusaFetch<{ product_categories: { id: string; handle: string }[] }>(
-      `/store/product-categories?handle[]=${encodeURIComponent(categoryParam || '')}&fields=id,handle`
-    ).then((res) => {
-      const cat = res.product_categories?.[0];
-      if (cat) {
-        const childIds = subcategoryIds[cat.id] || [];
-        setAllCategoryIds([cat.id, ...childIds]);
-      } else {
+    // Get category handle and subcategories using backend adapter
+    (async () => {
+      try {
+        // Find the category by handle - categories have handle property from backend adapter
+        const allCats = await fetchCategories();
+        const cat = allCats.find(c => c.handle === categoryParam);
+        if (cat) {
+          const childIds = subcategoryIds[cat.id] || [];
+          setAllCategoryIds([cat.id, ...childIds]);
+        } else {
+          setAllCategoryIds([]);
+        }
+      } catch {
         setAllCategoryIds([]);
       }
-    }).catch(() => setAllCategoryIds([]));
+    })();
   }, [categoryParam, subcategoryIds]);
 
-  const { products, loading, error } = useProducts({
-    limit: 100,
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 12;
+  const { products, total, loading, error } = useProducts({
+    limit: productsPerPage,
+    offset: (currentPage - 1) * productsPerPage,
     ...(allCategoryIds.length > 0 ? { category_id: allCategoryIds } : categoryParam ? { category_handle: [categoryParam] } : {}),
   });
 
@@ -158,7 +165,27 @@ export default function StorePage() {
     [products]
   );
   
-  // Use backend subcategories when available (from category hierarchy), fallback to product-derived
+  // Build category hierarchy for foldable menu
+  const [categoryHierarchy, setCategoryHierarchy] = useState<Record<string, { id: string; name: string; handle: string; children: { id: string; name: string; handle: string }[] }>>({});
+  
+  useEffect(() => {
+    fetchCategories().then((cats) => {
+      const hierarchy: Record<string, { id: string; name: string; handle: string; children: { id: string; name: string; handle: string }[] }> = {};
+      const childMap: Record<string, { id: string; name: string; handle: string }[]> = {};
+      
+      cats.forEach(c => {
+        const parentId = c.parent_id || c.parent_id;
+        if (parentId) {
+          if (!childMap[parentId]) childMap[parentId] = [];
+          childMap[parentId].push({ id: c.id, name: c.name, handle: c.slug });
+        } else {
+          hierarchy[c.id] = { id: c.id, name: c.name, handle: c.slug, children: childMap[c.id] || [] };
+        }
+      });
+      setCategoryHierarchy(hierarchy);
+    });
+  }, []);
+
   const availableSubcategories = backendSubcategories.length > 0 
     ? [...new Set(backendSubcategories.map(c => c.name))].sort()
     : availableSubcats;
@@ -221,7 +248,18 @@ export default function StorePage() {
     return result;
   }, [products, filters, sortBy, searchQuery]);
 
-  const displayed = showMore ? filteredProducts : filteredProducts.slice(0, 9);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const displayed = filteredProducts.slice(0, currentPage * productsPerPage);
+
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const toggleCategory = (id: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#F0F3FA]" style={{ fontFamily: "Inter, sans-serif" }}>
@@ -232,6 +270,42 @@ export default function StorePage() {
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-[#1E1E1E] font-medium">{pageTitle}</span>
         </nav>
+
+        {/* Category sidebar with foldable subcategories */}
+        <div className="hidden lg:block mb-6">
+          <div className="bg-white rounded-xl border border-[#E5E5E5] p-4">
+            <h3 className="text-sm font-semibold text-[#1E1E1E] mb-3" style={{ fontFamily: "Poppins, sans-serif" }}>Catégories</h3>
+            {Object.values(categoryHierarchy).map(cat => (
+              <div key={cat.id} className="mb-1">
+                <button
+                  onClick={() => toggleCategory(cat.id)}
+                  className="flex items-center gap-2 w-full text-left text-sm text-[#1E1E1E] hover:text-[#D4302A] transition-colors"
+                >
+                  {cat.children && cat.children.length > 0 ? (
+                    expandedCategories.has(cat.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRightIcon className="w-3 h-3" />
+                  ) : <span className="w-3" />}
+                  <Link to={`/products?category=${cat.handle}`} className="font-medium">
+                    {cat.name}
+                  </Link>
+                  <span className="text-xs text-[#717182]">({cat.children?.length || 0})</span>
+                </button>
+                {expandedCategories.has(cat.id) && cat.children && (
+                  <div className="ml-5 mt-1 space-y-1">
+                    {cat.children.map(child => (
+                      <Link
+                        key={child.id}
+                        to={`/products?category=${cat.handle}&subcategory=${child.handle}`}
+                        className="block text-xs text-[#717182] hover:text-[#D4302A] transition-colors py-0.5"
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -315,15 +389,19 @@ export default function StorePage() {
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
-                {filteredProducts.length > 9 && !showMore && (
-                  <div className="text-center mt-8">
-                    <button
-                      onClick={() => setShowMore(true)}
-                      className="inline-flex items-center gap-2 border border-[#1E1E1E] text-[#1E1E1E] px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#1E1E1E] hover:text-white transition-colors"
-                      style={{ fontFamily: "Poppins, sans-serif" }}
-                    >
-                      Afficher plus <ChevronDown className="w-4 h-4" />
-                    </button>
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-8 gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage(p)}
+                        className={`px-3 py-1 rounded ${
+                          currentPage === p ? "bg-[#D4302A] text-white" : "bg-gray-200"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
                   </div>
                 )}
               </>

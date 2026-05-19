@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { fetchProducts, normaliseProduct } from "@lib/data/medusa";
+import { fetchProducts, normaliseProduct } from "@lib/data/backend-adapter";
 
 export function useLiveSearch(initial = "") {
   const [query, setQuery] = useState(initial);

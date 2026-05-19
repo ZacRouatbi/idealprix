@@ -36,3 +36,4 @@ window.scrollTo = vi.fn()
 // Mock environment variables
 vi.stubEnv('VITE_MEDUSA_PUBLISHABLE_KEY', 'test-key')
 vi.stubEnv('VITE_MEDUSA_BACKEND_URL', 'http://localhost:9000')
+vi.stubEnv('VITE_BACKEND_API_URL', 'http://localhost:3000/api')

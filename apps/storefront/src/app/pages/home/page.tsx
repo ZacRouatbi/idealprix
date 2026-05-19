@@ -3,12 +3,12 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { formatPrice, HERO_IMAGE } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
-import { fetchProducts, fetchCategories } from "../../../lib/data/medusa";
+import { fetchCategories } from "../../../lib/data/backend-adapter";
 import { useEffect, useState } from "react";
 import ProductCard from "../../../modules/store/components/ProductCard";
 
 export default function HomePage() {
-  const { products, loading } = useProducts({ limit: 100 });
+  const { products, loading } = useProducts({ limit: 8 });
   const { categories, loading: categoriesLoading } = useCategories(3);
 
   const popularProducts = products

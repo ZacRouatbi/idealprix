@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "../../../lib/data/products";
 import { useProduct, useProducts } from "../../../lib/hooks/use-products";
+import { fetchProductByHandle } from "../../../lib/data/backend-adapter";
 import { useCart } from "../../../lib/context/CartContext";
 import ProductCard from "../../../modules/store/components/ProductCard";
 
