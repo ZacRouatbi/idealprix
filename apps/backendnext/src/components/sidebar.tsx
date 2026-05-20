@@ -83,13 +83,11 @@ const bottomNavigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user: sidebarUser, logout } = useAuth()
 
   const handleLogout = async () => {
     await logout()
   }
-
-  const { user: sidebarUser } = useAuth()
 
   return (
     <div className="flex h-full w-64 flex-col ideaprix-sidebar">

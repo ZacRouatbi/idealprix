@@ -1,6 +1,5 @@
 import "@/styles/globals.css"
 import { ThemeProvider } from "next-themes"
-import { AuthProvider } from "@/lib/context/auth-context"
 
 export const metadata = {
   title: "Ideal Prix - Login",
@@ -14,9 +13,7 @@ export default function LoginLayout({
 }>) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <AuthProvider>
-        {children}
-      </AuthProvider>
+      {children}
     </ThemeProvider>
   )
 }

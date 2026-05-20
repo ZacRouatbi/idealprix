@@ -30,63 +30,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const storedToken = localStorage.getItem('token')
-        if (!storedToken) {
-          setIsLoading(false)
-          return
-        }
-        const response = await fetch('/api/auth', {
-          headers: { Authorization: `Bearer ${storedToken}` }
-        })
-        const data = await response.json()
-        if (data.user) {
-          setUser(data.user)
-          setToken(storedToken)
-        } else {
-          setToken(null)
-          setUser(null)
-          localStorage.removeItem('token')
-        }
-      } catch {
-        setToken(null)
-        setUser(null)
-        localStorage.removeItem('token')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     const storedToken = localStorage.getItem('token')
     if (storedToken) {
       setToken(storedToken)
-      fetchUser()
-    } else {
-      setIsLoading(false)
+      try {
+        const payload = JSON.parse(atob(storedToken.split('.')[1]))
+        const decodedUser: User = {
+          id: payload.userId,
+          email: payload.email,
+          first_name: payload.email.split('@')[0],
+          last_name: '',
+          role: payload.role,
+          is_active: true,
+          created_at: new Date().toISOString(),
+        }
+        setUser(decodedUser)
+        
+        // Validate token with API in background
+        fetch('/api/auth', {
+          headers: { Authorization: `Bearer ${storedToken}` }
+        }).then(res => res.json()).then(data => {
+          if (!data.user) {
+            setUser(null)
+            setToken(null)
+            localStorage.removeItem('token')
+          }
+        }).catch(() => {})
+      } catch {
+        setUser(null)
+        setToken(null)
+        localStorage.removeItem('token')
+      }
     }
+    setIsLoading(false)
   }, [])
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
 
-      if (!response.ok) {
-        throw new Error('Invalid credentials')
-      }
-
-      const data = await response.json()
-      setUser(data.user)
-      setToken(data.token)
-      localStorage.setItem('token', data.token)
-      router.push('/')
-    } catch (error) {
-      throw error
+    if (!response.ok) {
+      throw new Error('Invalid credentials')
     }
+
+    const data = await response.json()
+    setUser(data.user)
+    setToken(data.token)
+    localStorage.setItem('token', data.token)
   }
 
   const logout = async () => {
