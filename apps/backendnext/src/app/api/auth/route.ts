@@ -10,7 +10,58 @@ if (!JWT_SECRET) {
 
 const JWT_SECRET_VALIDATED = JWT_SECRET! as string
 
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173']
+
+const getCorsHeaders = (request: NextRequest) => {
+  const origin = request.headers.get('origin')
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-csrf-token',
+    'Access-Control-Allow-Credentials': 'true',
+  }
+  
+  if (origin && ALLOWED_ORIGINS.some(allowed => allowed === origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+  }
+  
+  return headers
+}
+
+const validateOrigin = (request: NextRequest): boolean => {
+  const origin = request.headers.get('origin')
+  if (!origin) return true
+
+  try {
+    const originUrl = new URL(origin)
+    const allowed = ALLOWED_ORIGINS.some(allowedOrigin => {
+      try {
+        const allowedUrl = new URL(allowedOrigin)
+        return originUrl.origin === allowedUrl.origin
+      } catch {
+        return false
+      }
+    })
+    return allowed
+  } catch {
+    return false
+  }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const headers = getCorsHeaders(request)
+  return new NextResponse(null, { status: 200, headers })
+}
+
 export async function POST(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request)
+  
+  if (!validateOrigin(request)) {
+    return NextResponse.json(
+      { error: 'Invalid origin' },
+      { status: 403, headers: corsHeaders }
+    )
+  }
+
   try {
     const body = await request.json()
     const { email, password } = body
@@ -18,7 +69,7 @@ export async function POST(request: NextRequest) {
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -30,7 +81,7 @@ export async function POST(request: NextRequest) {
     if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -40,7 +91,7 @@ export async function POST(request: NextRequest) {
     if (!isValid) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -59,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json(
       { user: userWithoutPassword, token },
-      { status: 200 }
+      { status: 200, headers: corsHeaders }
     )
     response.cookies.set('token', token, {
       httpOnly: true,
@@ -72,17 +123,19 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'Authentication failed' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
 
 export async function GET(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request)
+  
   const token = request.cookies.get('token')?.value ||
     request.headers.get('authorization')?.split(' ')[1]
 
   if (!token) {
-    return NextResponse.json({ user: null }, { status: 200 })
+    return NextResponse.json({ user: null }, { status: 200, headers: corsHeaders })
   }
 
   try {
@@ -94,18 +147,19 @@ export async function GET(request: NextRequest) {
     )
 
     if (result.rows.length === 0) {
-      return NextResponse.json({ user: null }, { status: 200 })
+      return NextResponse.json({ user: null }, { status: 200, headers: corsHeaders })
     }
 
     const { password_hash, ...user } = result.rows[0]
-    return NextResponse.json({ user }, { status: 200 })
+    return NextResponse.json({ user }, { status: 200, headers: corsHeaders })
   } catch {
-    return NextResponse.json({ user: null }, { status: 200 })
+    return NextResponse.json({ user: null }, { status: 200, headers: corsHeaders })
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const response = NextResponse.json({ success: true })
+  const corsHeaders = getCorsHeaders(request)
+  const response = NextResponse.json({ success: true }, { headers: corsHeaders })
   response.cookies.delete('token')
   return response
 }
