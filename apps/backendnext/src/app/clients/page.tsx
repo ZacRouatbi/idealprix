@@ -10,7 +10,12 @@ import { RefreshCw, Download } from "lucide-react"
 import { exportToPDF } from "@/lib/export-utils"
 
 async function getClients() {
-  const response = await fetch("/api/clients?limit=100")
+  const token = localStorage.getItem('token')
+  const response = await fetch("/api/clients?limit=100", {
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+    }
+  })
   if (!response.ok) throw new Error("Failed to fetch clients")
   return response.json()
 }

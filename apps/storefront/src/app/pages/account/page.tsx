@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@lib/context/AuthContext";
 import AccountTemplate from "@modules/account/templates";
+import { fetchCustomerOrders } from "@lib/data/backend-api";
 
 export default function AccountDashboardPage() {
   const { customer, isLoading, token } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState(null);
+  const [orders, setOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
 
   useEffect(() => {
@@ -20,25 +21,8 @@ export default function AccountDashboardPage() {
       if (!token) return;
       setOrdersLoading(true);
       try {
-        const BACKEND_URL = (import.meta as any).env?.VITE_MEDUSA_BACKEND_URL || "http://localhost:9000";
-        const PUB_KEY = (import.meta as any).env?.VITE_MEDUSA_PUBLISHABLE_KEY || "";
-        
-        const res = await fetch(`${BACKEND_URL}/store/orders`, {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-            ...(PUB_KEY ? { "x-publishable-api-key": PUB_KEY } : {}),
-          },
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setOrders(data.orders || []);
-        } else {
-          const errData = await res.text().catch(() => "");
-          console.error("Failed to fetch orders:", res.status, errData);
-          setOrders([]);
-        }
+        const data = await fetchCustomerOrders(token);
+        setOrders(data.data || []);
       } catch (err) {
         console.error("Failed to fetch orders:", err);
         setOrders([]);

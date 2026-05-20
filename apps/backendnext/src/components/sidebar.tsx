@@ -15,6 +15,7 @@ import {
   FileText,
   LogOut,
   User,
+  Ticket,
 } from "lucide-react"
 import { AccountModal } from "@/components/account-modal"
 import { useAuth } from "@/lib/context/auth-context"
@@ -51,6 +52,11 @@ const navigation = [
     icon: Tags,
   },
   {
+    name: "Promotions",
+    href: "/promotions",
+    icon: Ticket,
+  },
+  {
     name: "Analytics",
     href: "/analytics",
     icon: BarChart3,
@@ -82,6 +88,8 @@ export function Sidebar() {
   const handleLogout = async () => {
     await logout()
   }
+
+  const { user: sidebarUser } = useAuth()
 
   return (
     <div className="flex h-full w-64 flex-col ideaprix-sidebar">
@@ -161,7 +169,7 @@ export function Sidebar() {
                     </li>
                   )
                 })}
-                {user && (
+                {sidebarUser && (
                   <li>
                     <button
                       onClick={handleLogout}

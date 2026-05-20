@@ -13,7 +13,12 @@ import { Order, OrderStatus } from "@/services/order-service"
 import { useState } from "react"
 
 async function getOrders() {
-  const response = await fetch("/api/orders?limit=100")
+  const token = localStorage.getItem('token')
+  const response = await fetch("/api/orders?limit=100", {
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+    }
+  })
   if (!response.ok) throw new Error("Failed to fetch orders")
   return response.json()
 }
@@ -34,9 +39,13 @@ export default function OrdersPage() {
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     try {
+      const token = localStorage.getItem('token')
       await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ status }),
       })
       queryClient.invalidateQueries({ queryKey: ["orders"] })
@@ -48,9 +57,13 @@ export default function OrdersPage() {
   const handleSendEmail = async (order: Order) => {
     setEmailStatus(prev => ({ ...prev, [order.id]: "sending" }))
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(`/api/orders/${order.id}/email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       })
       if (response.ok) {
         setEmailStatus(prev => ({ ...prev, [order.id]: "sent" }))

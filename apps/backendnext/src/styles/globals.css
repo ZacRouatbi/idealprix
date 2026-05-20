@@ -86,4 +86,13 @@
     @apply bg-background text-foreground;
     overflow-x: hidden;
   }
+  
+  /* Date input styling with black border */
+  input[type="date"] {
+    @apply border border-black;
+  }
+  
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply opacity-70;
+  }
 }

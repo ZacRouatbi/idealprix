@@ -31,31 +31,27 @@ interface DataTableProps<TData, TValue> {
   getChildren?: (item: TData) => TData[]
 }
 
-function getCategoryChildren(row: Category, getChildrenFn: ((item: Category) => Category[]) | undefined): Category[] {
-  return getChildrenFn ? getChildrenFn(row) : []
-}
-
-function getChildContext(child: Category, col: any) {
+function getChildContext<TData>(child: TData, col: any): any {
   return {
     row: {
       original: child,
       getIsExpanded: () => false,
       toggleExpanded: () => {},
-      getValue: (key: string) => child[key as keyof Category] ?? '',
+      getValue: (key: string) => (child as any)[key] ?? '',
       getCanExpand: () => false,
     } as any,
     column: { id: col.id } as any,
   } as any
 }
 
-export function DataTable({
+export function DataTable<TData = Category, TValue = any>({
   columns,
   data,
   pageSize = 50,
   pageCount = 0,
   onDelete,
   getChildren,
-}: DataTableProps<Category, any>) {
+}: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [pagination, setPagination] = useState<PaginationState>({
@@ -90,36 +86,35 @@ export function DataTable({
     },
   })
 
-  return (
-    <div className="space-y-4">
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b bg-muted/50">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="p-4 text-left align-middle font-medium"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => {
-                const category = row.original as Category
-                const children = getCategoryChildren(category, getChildren)
-                const hasChildren = children.length > 0
-                const isExpanded = row.getIsExpanded()
+return (
+      <div className="space-y-4">
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full">
+            <thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id} className="border-b bg-muted/50">
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="p-4 text-left align-middle font-medium"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => {
+                  const children = getChildren ? getChildren(row.original) : []
+                  const hasChildren = children.length > 0
+                  const isExpanded = row.getIsExpanded()
 
                 return (
                   <Fragment key={row.id}>
@@ -135,22 +130,22 @@ export function DataTable({
                         </td>
                       ))}
                     </tr>
-                    {hasChildren && isExpanded && (
-                      <Fragment key={`children-${row.id}`}>
-                        {children.map((child, index) => (
-                          <tr key={`child-${row.id}-${child.id ?? child.name ?? index}`} className="border-b bg-muted/20">
-                            {columns.map((col, colIndex) => (
-                              <td key={`${row.id}-${col.id}-${colIndex}`} className="p-4 align-middle" style={{ paddingLeft: col.id === 'name' ? '48px' : undefined }}>
-                                {flexRender(
-                                  col.cell as any,
-                                  getChildContext(child, col)
-                                )}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </Fragment>
-                    )}
+{hasChildren && isExpanded && (
+                       <Fragment key={`children-${row.id}`}>
+                         {children.map((child: any, index) => (
+                           <tr key={`child-${row.id}-${child?.id ?? child?.name ?? index}`} className="border-b bg-muted/20">
+                             {columns.map((col, colIndex) => (
+                               <td key={`${row.id}-${col.id}-${colIndex}`} className="p-4 align-middle" style={{ paddingLeft: col.id === 'name' ? '48px' : undefined }}>
+                                 {flexRender(
+                                   col.cell as any,
+                                   getChildContext(child, col)
+                                 )}
+                               </td>
+                             ))}
+                           </tr>
+                         ))}
+                       </Fragment>
+                     )}
                   </Fragment>
                 )
               })

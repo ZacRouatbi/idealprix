@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
+import { z } from "zod";
 import { useAuth } from "@lib/context/AuthContext";
+import { login, register } from "@lib/data/backend-api";
+import { loginSchema, registerSchema } from "@lib/schemas/auth-schemas";
+
+const nameSchema = z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters');
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -9,47 +14,87 @@ interface AuthModalProps {
   onAuthSuccess?: () => void;
 }
 
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
+
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<"login" | "register" | "reset">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [formData, setFormData] = useState<LoginFormData & { name: string }>({
+    email: "",
+    password: "",
+    name: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const { setToken, setCustomer } = useAuth();
 
   if (!isOpen) return null;
 
-  const PUBLISHABLE_KEY = import.meta.env.VITE_MEDUSA_PUBLISHABLE_KEY || "";
+  const validateField = (field: string, value: string | undefined): string | null => {
+    try {
+      const val = value ?? ""
+      if (activeTab === "login") {
+        if (field === "email") {
+          loginSchema.shape.email.parse(val);
+        } else if (field === "password") {
+          loginSchema.shape.password.parse(val);
+        }
+      } else if (activeTab === "register") {
+        if (field === "email") {
+          registerSchema.shape.email.parse(val);
+        } else if (field === "password") {
+          registerSchema.shape.password.parse(val);
+        } else if (field === "name") {
+          if (val.length > 0) {
+            nameSchema.parse(val);
+          }
+        }
+      }
+      return null;
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return err.issues[0].message;
+      }
+      return "Validation error";
+    }
+  };
 
-  const { token, setToken, setCustomer } = useAuth();
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    const fieldError = validateField(field, value);
+    setFieldErrors((prev) => ({ ...prev, [field]: fieldError || "" }));
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    try {
-      const res = await fetch("/auth/customer/emailpass", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-publishable-api-key": PUBLISHABLE_KEY,
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+    const validation = loginSchema.safeParse({
+      email: formData.email,
+      password: formData.password,
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        setToken(data.token);
-        onAuthSuccess?.();
-        onClose();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.message || "Échec de la connexion");
-      }
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.issues.forEach((err: z.ZodIssue) => {
+        errors[err.path[0] as string] = err.message;
+      });
+      setFieldErrors(errors);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { user, token } = await login(formData.email, formData.password);
+      setToken(token);
+      setCustomer(user);
+      onAuthSuccess?.();
+      onClose();
     } catch (err) {
-      setError("Erreur de connexion au serveur");
+      setError(err instanceof Error ? err.message : "Échec de la connexion");
     } finally {
       setLoading(false);
     }
@@ -60,66 +105,50 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     setLoading(true);
     setError(null);
 
-    try {
-      const [firstName, ...lastNameParts] = name.split(" ");
-      const lastName = lastNameParts.join(" ") || firstName;
+    // Name validation - required field
+    if (!formData.name || formData.name.length === 0) {
+      setFieldErrors({ name: 'Name is required' });
+      setLoading(false);
+      return;
+    }
+    const nameValidation = nameSchema.safeParse(formData.name);
+    if (!nameValidation.success) {
+      setFieldErrors({ name: nameValidation.error.issues[0].message });
+      setLoading(false);
+      return;
+    }
 
-      // Step 1: Get registration JWT token
-      const tokenRes = await fetch("/auth/customer/emailpass/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-publishable-api-key": PUBLISHABLE_KEY,
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
+    const [firstName, ...lastNameParts] = formData.name.split(" ");
+    const lastName = lastNameParts.join(" ") || firstName;
+
+    const validation = registerSchema.safeParse({
+      email: formData.email,
+      password: formData.password,
+      first_name: firstName,
+      last_name: lastName,
+    });
+
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.issues.forEach((err: z.ZodIssue) => {
+        errors[err.path[0] as string] = err.message;
       });
+      setFieldErrors(errors);
+      setLoading(false);
+      return;
+    }
 
-      if (!tokenRes.ok) {
-        const data = await tokenRes.json().catch(() => ({}));
-        throw new Error(data.message || "Registration failed");
-      }
-
-      const tokenData = await tokenRes.json();
-      const registrationToken = tokenData.token;
-
-      // Step 2: Register customer with the token
-      const res = await fetch("/store/customers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-publishable-api-key": PUBLISHABLE_KEY,
-          "Authorization": `Bearer ${registrationToken}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email,
-          first_name: firstName,
-          last_name: lastName,
-        }),
-      });
-
-      if (res.ok) {
-        // Step 3: Auto-login after successful registration
-        const loginRes = await fetch("/auth/customer/emailpass", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-publishable-api-key": PUBLISHABLE_KEY,
-          },
-          credentials: "include",
-          body: JSON.stringify({ email, password }),
-        });
-        if (loginRes.ok) {
-          const loginData = await loginRes.json();
-          setToken(loginData.token);
-        }
-        onAuthSuccess?.();
-        onClose();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.message || "Échec de la création du compte");
-      }
+try {
+       const { user, token } = await register({
+         email: formData.email,
+         password: formData.password,
+         first_name: firstName,
+         last_name: lastName,
+       });
+      setToken(token);
+      setCustomer(user);
+      onAuthSuccess?.();
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de connexion au serveur");
     } finally {
@@ -149,24 +178,30 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
               <label className="block text-sm font-medium text-[#1E1E1E] mb-1">Email</label>
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4302A] bg-gray-50"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none bg-gray-50 ${
+                  fieldErrors.email ? "border-red-500" : "border-gray-300 focus:border-[#D4302A]"
+                }`}
                 placeholder="exemple@email.com"
-                required
+                aria-invalid={!!fieldErrors.email}
               />
+              {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[#1E1E1E] mb-1">Mot de passe</label>
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4302A] bg-gray-50"
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none bg-gray-50 ${
+                  fieldErrors.password ? "border-red-500" : "border-gray-300 focus:border-[#D4302A]"
+                }`}
                 placeholder="••••••••"
-                required
+                aria-invalid={!!fieldErrors.password}
               />
+              {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
             </div>
 
             {error && <p className="text-red-500 text-xs">{error}</p>}
@@ -197,36 +232,45 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
               <label className="block text-sm font-medium text-[#1E1E1E] mb-1">Nom complet</label>
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4302A] bg-gray-50"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none bg-gray-50 ${
+                  fieldErrors.name ? "border-red-500" : "border-gray-300 focus:border-[#D4302A]"
+                }`}
                 placeholder="Jean Dupont"
-                required
+                aria-invalid={!!fieldErrors.name}
               />
+              {fieldErrors.name && <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[#1E1E1E] mb-1">Email</label>
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4302A] bg-gray-50"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none bg-gray-50 ${
+                  fieldErrors.email ? "border-red-500" : "border-gray-300 focus:border-[#D4302A]"
+                }`}
                 placeholder="exemple@email.com"
-                required
+                aria-invalid={!!fieldErrors.email}
               />
+              {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-[#1E1E1E] mb-1">Mot de passe</label>
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4302A] bg-gray-50"
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none bg-gray-50 ${
+                  fieldErrors.password ? "border-red-500" : "border-gray-300 focus:border-[#D4302A]"
+                }`}
                 placeholder="••••••••"
-                required
+                aria-invalid={!!fieldErrors.password}
               />
+              {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
             </div>
 
             {error && <p className="text-red-500 text-xs">{error}</p>}
@@ -257,8 +301,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
               <label className="block text-sm font-medium text-[#1E1E1E] mb-1">Email</label>
               <input
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4302A] bg-gray-50"
                 placeholder="exemple@email.com"
                 required

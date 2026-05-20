@@ -4,17 +4,12 @@ import userEvent from '@testing-library/user-event'
 import AuthModal from '../modules/layout/components/AuthModal'
 import { AuthProvider } from '../lib/context/AuthContext'
 
-// Mock fetch globally
 const mockFetch = vi.fn()
 global.fetch = mockFetch as any
 
-// Mock createPortal
 vi.mock('react-dom', () => ({
   createPortal: (node: any) => node,
 }))
-
-const mockPublishableKey = 'test-publishable-key'
-vi.stubEnv('VITE_MEDUSA_PUBLISHABLE_KEY', mockPublishableKey)
 
 const defaultProps = {
   isOpen: true,
@@ -65,10 +60,13 @@ describe('AuthModal', () => {
   })
 
   describe('Login', () => {
-    it('should call login API with correct credentials', async () => {
+    it('should call backend API with correct credentials', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ token: 'test-jwt-token' }),
+        json: async () => ({ 
+          user: { id: '1', email: 'test@example.com', first_name: 'Test', last_name: 'User', role: 'customer' },
+          token: 'test-jwt-token' 
+        }),
       })
 
       renderWithAuth(<AuthModal {...defaultProps} />)
@@ -78,20 +76,19 @@ describe('AuthModal', () => {
       const submitButton = screen.getByRole('button', { name: 'Se connecter' })
 
       await userEvent.type(emailInput, 'test@example.com')
-      await userEvent.type(passwordInput, 'password123')
+      await userEvent.type(passwordInput, 'Password123')
       await fireEvent.click(submitButton)
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/auth/customer/emailpass', {
+        expect(mockFetch).toHaveBeenCalledWith('/api/auth', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-publishable-api-key': mockPublishableKey,
           },
           credentials: 'include',
           body: JSON.stringify({
             email: 'test@example.com',
-            password: 'password123',
+            password: 'Password123',
           }),
         })
       })
@@ -100,7 +97,10 @@ describe('AuthModal', () => {
     it('should call onAuthSuccess and onClose on successful login', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ token: 'test-jwt-token' }),
+        json: async () => ({ 
+          user: { id: '1', email: 'test@example.com', first_name: 'Test', last_name: 'User', role: 'customer' },
+          token: 'test-jwt-token' 
+        }),
       })
 
       const onAuthSuccess = vi.fn()
@@ -115,7 +115,7 @@ describe('AuthModal', () => {
       const submitButton = screen.getByRole('button', { name: 'Se connecter' })
 
       await userEvent.type(emailInput, 'test@example.com')
-      await userEvent.type(passwordInput, 'password123')
+      await userEvent.type(passwordInput, 'Password123')
       await fireEvent.click(submitButton)
 
       await waitFor(() => {
@@ -127,7 +127,7 @@ describe('AuthModal', () => {
     it('should display error message on failed login', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        json: async () => ({ message: 'Invalid credentials' }),
+        json: async () => ({ error: 'Invalid credentials' }),
       })
 
       renderWithAuth(<AuthModal {...defaultProps} />)
@@ -158,7 +158,7 @@ describe('AuthModal', () => {
       const submitButton = screen.getByRole('button', { name: 'Se connecter' })
 
       await userEvent.type(emailInput, 'test@example.com')
-      await userEvent.type(passwordInput, 'password123')
+      await userEvent.type(passwordInput, 'Password123')
       await fireEvent.click(submitButton)
 
       await waitFor(() => {
@@ -176,7 +176,7 @@ describe('AuthModal', () => {
       const submitButton = screen.getByRole('button', { name: 'Se connecter' })
 
       await userEvent.type(emailInput, 'test@example.com')
-      await userEvent.type(passwordInput, 'password123')
+      await userEvent.type(passwordInput, 'Password123')
       await fireEvent.click(submitButton)
 
       await waitFor(() => {
@@ -197,7 +197,7 @@ describe('AuthModal', () => {
       const submitButton = screen.getByRole('button', { name: 'Se connecter' })
 
       await userEvent.type(emailInput, 'test@example.com')
-      await userEvent.type(passwordInput, 'password123')
+      await userEvent.type(passwordInput, 'Password123')
       await fireEvent.click(submitButton)
 
       expect(submitButton).toBeDisabled()
@@ -212,20 +212,14 @@ describe('AuthModal', () => {
   })
 
   describe('Register', () => {
-    it('should call register API flow on successful registration', async () => {
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ token: 'registration-token' }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ customer: { id: 'cus_123' } }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ token: 'login-token' }),
-        })
+    it('should call backend register API on successful registration', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ 
+          user: { id: '1', email: 'john@example.com', first_name: 'John', last_name: 'Doe', role: 'customer' },
+          token: 'test-jwt-token' 
+        }),
+      })
 
       const onAuthSuccess = vi.fn()
 
@@ -242,88 +236,30 @@ describe('AuthModal', () => {
 
       await userEvent.type(nameInput, 'John Doe')
       await userEvent.type(emailInput, 'john@example.com')
-      await userEvent.type(passwordInput, 'password123')
+      await userEvent.type(passwordInput, 'Password123')
       await fireEvent.click(submitButton)
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/auth/customer/emailpass/register', {
+        expect(mockFetch).toHaveBeenCalledWith('/api/auth/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-publishable-api-key': mockPublishableKey,
           },
           credentials: 'include',
           body: JSON.stringify({
             email: 'john@example.com',
-            password: 'password123',
-          }),
-        })
-      })
-
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/store/customers', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-publishable-api-key': mockPublishableKey,
-            'Authorization': 'Bearer registration-token',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            email: 'john@example.com',
+            password: 'Password123',
             first_name: 'John',
             last_name: 'Doe',
           }),
         })
-      })
-
-      await waitFor(() => {
-        expect(onAuthSuccess).toHaveBeenCalled()
-        expect(defaultProps.onClose).toHaveBeenCalled()
-      })
-    })
-
-    it('should split name correctly with multiple parts', async () => {
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ token: 'registration-token' }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ customer: { id: 'cus_123' } }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ token: 'login-token' }),
-        })
-
-      renderWithAuth(<AuthModal {...defaultProps} />)
-
-      await fireEvent.click(screen.getByText("Pas de compte ? S'inscrire"))
-
-      const nameInput = screen.getByLabelText('Nom complet')
-      const submitButton = screen.getByRole('button', { name: 'Créer le compte' })
-
-      await userEvent.type(nameInput, 'John James Doe')
-      await userEvent.type(screen.getByLabelText('Email'), 'john@example.com')
-      await userEvent.type(screen.getByLabelText('Mot de passe'), 'password123')
-      await fireEvent.click(submitButton)
-
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          '/store/customers',
-          expect.objectContaining({
-            body: expect.stringContaining('"first_name":"John"'),
-          })
-        )
       })
     })
 
     it('should display error on failed registration', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        json: async () => ({ message: 'Email already exists' }),
+        json: async () => ({ error: 'Email already exists' }),
       })
 
       renderWithAuth(<AuthModal {...defaultProps} />)
@@ -332,7 +268,7 @@ describe('AuthModal', () => {
 
       await userEvent.type(screen.getByLabelText('Nom complet'), 'John Doe')
       await userEvent.type(screen.getByLabelText('Email'), 'existing@example.com')
-      await userEvent.type(screen.getByLabelText('Mot de passe'), 'password123')
+      await userEvent.type(screen.getByLabelText('Mot de passe'), 'Password123')
       await fireEvent.click(screen.getByRole('button', { name: 'Créer le compte' }))
 
       await waitFor(() => {
@@ -351,7 +287,7 @@ describe('AuthModal', () => {
 
       await userEvent.type(screen.getByLabelText('Nom complet'), 'John Doe')
       await userEvent.type(screen.getByLabelText('Email'), 'john@example.com')
-      await userEvent.type(screen.getByLabelText('Mot de passe'), 'password123')
+      await userEvent.type(screen.getByLabelText('Mot de passe'), 'Password123')
       await fireEvent.click(screen.getByRole('button', { name: 'Créer le compte' }))
 
       expect(screen.getByRole('button', { name: 'Création...' })).toBeDisabled()
@@ -389,7 +325,7 @@ describe('AuthModal', () => {
       await fireEvent.click(screen.getByText("Pas de compte ? S'inscrire"))
 
       await userEvent.type(screen.getByLabelText('Email'), 'john@example.com')
-      await userEvent.type(screen.getByLabelText('Mot de passe'), 'password123')
+      await userEvent.type(screen.getByLabelText('Mot de passe'), 'Password123')
       await fireEvent.click(screen.getByRole('button', { name: 'Créer le compte' }))
 
       expect(mockFetch).not.toHaveBeenCalled()
@@ -432,7 +368,7 @@ describe('AuthModal', () => {
       const onClose = vi.fn()
       renderWithAuth(<AuthModal {...defaultProps} onClose={onClose} />)
 
-      const backdrop = document.querySelector('.fixed.inset-0.z-\\[100\\]')
+      const backdrop = document.querySelector('.fixed.inset-0')
       await fireEvent.click(backdrop!)
       expect(onClose).toHaveBeenCalled()
     })

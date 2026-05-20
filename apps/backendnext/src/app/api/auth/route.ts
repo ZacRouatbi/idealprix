@@ -8,12 +8,12 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required')
 }
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const JWT_SECRET_VALIDATED = JWT_SECRET! as string
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const body = await request.json()
+    const { email, password } = body
 
     if (!email || !password) {
       return NextResponse.json(
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
 
     const { password_hash, ...user } = result.rows[0]
     return NextResponse.json({ user }, { status: 200 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ user: null }, { status: 200 })
   }
 }

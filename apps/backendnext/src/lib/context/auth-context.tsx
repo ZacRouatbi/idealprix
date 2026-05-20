@@ -9,10 +9,8 @@ interface User {
   first_name: string
   last_name: string
   role: 'admin' | 'manager' | 'staff' | 'customer'
-  avatar_url?: string
   is_active: boolean
   created_at: string
-  updated_at: string
 }
 
 interface AuthContextType {
@@ -32,21 +30,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const storedToken = localStorage.getItem('token')
+        if (!storedToken) {
+          setIsLoading(false)
+          return
+        }
+        const response = await fetch('/api/auth', {
+          headers: { Authorization: `Bearer ${storedToken}` }
+        })
+        const data = await response.json()
+        if (data.user) {
+          setUser(data.user)
+          setToken(storedToken)
+        } else {
+          setToken(null)
+          setUser(null)
+          localStorage.removeItem('token')
+        }
+      } catch {
+        setToken(null)
+        setUser(null)
+        localStorage.removeItem('token')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
     const storedToken = localStorage.getItem('token')
     if (storedToken) {
       setToken(storedToken)
-      fetch('/api/auth', {
-        headers: { Authorization: `Bearer ${storedToken}` }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user) setUser(data.user)
-        })
-        .catch(() => {
-          localStorage.removeItem('token')
-          setToken(null)
-        })
-        .finally(() => setIsLoading(false))
+      fetchUser()
     } else {
       setIsLoading(false)
     }
@@ -78,7 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     setToken(null)
     localStorage.removeItem('token')
-    await fetch('/api/auth', { method: 'DELETE' })
+    try {
+      await fetch('/api/auth', { method: 'DELETE' })
+    } catch {
+      // Ignore
+    }
     router.push('/login')
   }
 

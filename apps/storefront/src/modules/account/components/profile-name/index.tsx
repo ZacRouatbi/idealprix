@@ -5,31 +5,32 @@ import React, { useEffect, useActionState } from "react";
 import Input from "@modules/common/components/input"
 
 import AccountInfo from "../account-info"
-import { HttpTypes } from "@medusajs/types"
-import { updateCustomer } from "@lib/data/customer"
+import { useAuth } from "@lib/context/AuthContext"
+import { updateCustomer } from "@lib/data/backend-api"
 
 type MyInformationProps = {
-  customer: HttpTypes.StoreCustomer
+  customer: any
 }
 
 const ProfileName: React.FC<MyInformationProps> = ({ customer }) => {
+  const { customer: authCustomer } = useAuth()
   const [successState, setSuccessState] = React.useState(false)
 
-  const updateCustomerName = async (
+const updateCustomerName = async (
     _currentState: Record<string, unknown>,
     formData: FormData
   ) => {
-    const customer = {
-      first_name: formData.get("first_name") as string,
-      last_name: formData.get("last_name") as string,
-    }
-
     try {
-      await updateCustomer(customer)
+      await updateCustomer({
+        first_name: formData.get("first_name") as string,
+        last_name: formData.get("last_name") as string,
+        email: authCustomer?.email || customer.email || "",
+      })
       return { success: true, error: null }
     } catch (error) {
       return { success: false, error: String(error) }
     }
+  }
   }
 
   const [state, formAction] = useActionState(updateCustomerName, {
@@ -49,7 +50,7 @@ const ProfileName: React.FC<MyInformationProps> = ({ customer }) => {
     <form action={formAction} className="w-full overflow-visible">
       <AccountInfo
         label="Name"
-        currentInfo={`${customer.first_name} ${customer.last_name}`}
+        currentInfo={`${customer.first_name || authCustomer?.first_name || ""} ${customer.last_name || authCustomer?.last_name || ""}`}
         isSuccess={successState}
         isError={!!state?.error}
         clearState={clearState}
@@ -60,14 +61,14 @@ const ProfileName: React.FC<MyInformationProps> = ({ customer }) => {
             label="First name"
             name="first_name"
             required
-            defaultValue={customer.first_name ?? ""}
+            defaultValue={customer.first_name || authCustomer?.first_name || ""}
             data-testid="first-name-input"
           />
           <Input
             label="Last name"
             name="last_name"
             required
-            defaultValue={customer.last_name ?? ""}
+            defaultValue={customer.last_name || authCustomer?.last_name || ""}
             data-testid="last-name-input"
           />
         </div>

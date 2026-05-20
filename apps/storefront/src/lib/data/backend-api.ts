@@ -172,3 +172,42 @@ export async function verifyAuth(token: string): Promise<{ user: User | null }> 
 export async function logout(): Promise<void> {
   return apiClient('/auth', { method: 'DELETE' })
 }
+
+export async function register(userData: {
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+}): Promise<{ user: User; token: string }> {
+  return apiClient('/auth/register', {
+    method: 'POST',
+    data: userData,
+  })
+}
+
+export async function updateCustomer(userData: {
+  first_name: string
+  last_name: string
+  email: string
+}): Promise<User> {
+  return apiClient('/auth', {
+    method: 'PUT',
+    data: userData,
+  })
+}
+
+export async function fetchCustomerOrders(token: string, params?: {
+  limit?: number
+  offset?: number
+  status?: string
+}): Promise<{ data: Order[]; count: number; totalPages: number }> {
+  const qs = new URLSearchParams()
+  if (params?.limit) qs.set('limit', String(params.limit))
+  if (params?.offset) qs.set('offset', String(params.offset))
+  if (params?.status) qs.set('status', params.status)
+
+  return apiClient<{ data: Order[]; count: number; totalPages: number }>(
+    `/orders/customer?${qs.toString()}`,
+    { token }
+  )
+}

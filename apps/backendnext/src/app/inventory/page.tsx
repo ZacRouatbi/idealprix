@@ -11,7 +11,12 @@ import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
 
 async function getInventory() {
-  const response = await fetch("/api/inventory?limit=100")
+  const token = localStorage.getItem('token')
+  const response = await fetch("/api/inventory?limit=100", {
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+    }
+  })
   if (!response.ok) throw new Error("Failed to fetch inventory")
   return response.json()
 }
@@ -27,7 +32,11 @@ export default function InventoryPage() {
   const handleDelete = async (item: any) => {
     if (!confirm("Are you sure you want to delete this inventory item?")) return
     try {
-      await fetch(`/api/inventory/${item.product_id}`, { method: "DELETE" })
+      const token = localStorage.getItem('token')
+      await fetch(`/api/inventory/${item.product_id}`, { 
+        method: "DELETE",
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       queryClient.invalidateQueries({ queryKey: ["inventory"] })
     } catch (err) {
       alert("Failed to delete inventory item")

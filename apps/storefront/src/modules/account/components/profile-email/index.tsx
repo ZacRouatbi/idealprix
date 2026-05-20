@@ -5,27 +5,32 @@ import React, { useEffect, useActionState } from "react";
 import Input from "@modules/common/components/input"
 
 import AccountInfo from "../account-info"
-import { HttpTypes } from "@medusajs/types"
-// import { updateCustomer } from "@lib/data/customer"
+import { useAuth } from "@lib/context/AuthContext"
+import { updateCustomer } from "@lib/data/backend-api"
 
 type MyInformationProps = {
-  customer: HttpTypes.StoreCustomer
+  customer: any
 }
 
 const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
+  const { customer: authCustomer } = useAuth()
   const [successState, setSuccessState] = React.useState(false)
 
-  // TODO: It seems we don't support updating emails now?
-  const updateCustomerEmail = (
+const updateCustomerEmail = async (
     _currentState: Record<string, unknown>,
-    _formData: FormData
+    formData: FormData
   ) => {
     try {
-      // email: formData.get("email") as string
+      await updateCustomer({
+        email: formData.get("email") as string,
+        first_name: authCustomer?.first_name || customer.first_name || "",
+        last_name: authCustomer?.last_name || customer.last_name || "",
+      })
       return { success: true, error: null }
     } catch (error) {
       return { success: false, error: String(error) }
     }
+  }
   }
 
   const [state, formAction] = useActionState(updateCustomerEmail, {
@@ -45,7 +50,7 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
     <form action={formAction} className="w-full">
       <AccountInfo
         label="Email"
-        currentInfo={`${customer.email}`}
+        currentInfo={`${customer.email || authCustomer?.email || ""}`}
         isSuccess={successState}
         isError={!!state.error}
         errorMessage={state.error || undefined}
@@ -59,7 +64,7 @@ const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
             type="email"
             autoComplete="email"
             required
-            defaultValue={customer.email}
+            defaultValue={customer.email || authCustomer?.email || ""}
             data-testid="email-input"
           />
         </div>

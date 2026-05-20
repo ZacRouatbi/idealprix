@@ -39,7 +39,12 @@ export default function CategoriesPage() {
     queryKey: ["categories", page, limit],
     queryFn: async () => {
       const offset = page * limit
-      const response = await fetch(`/api/categories?limit=${limit}&offset=${offset}`)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/categories?limit=${limit}&offset=${offset}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+        }
+      })
       if (!response.ok) throw new Error("Failed to fetch categories")
       return response.json()
     },
@@ -48,7 +53,11 @@ export default function CategoriesPage() {
   const handleDelete = async (category: Category) => {
     if (!confirm("Are you sure you want to delete this category?")) return
     try {
-      await fetch(`/api/categories/${category.id}`, { method: "DELETE" })
+      const token = localStorage.getItem('token')
+      await fetch(`/api/categories/${category.id}`, { 
+        method: "DELETE",
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       refetch()
     } catch (err) {
       alert("Failed to delete category")

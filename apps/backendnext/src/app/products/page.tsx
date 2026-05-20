@@ -13,22 +13,21 @@ import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 
-async function getProducts() {
-  const response = await fetch("/api/products?limit=100")
-  if (!response.ok) throw new Error("Failed to fetch products")
-  return response.json()
-}
-
 export default function ProductsPage() {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(0)
   const [limit, setLimit] = useState(10)
-  
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["products", page, limit],
     queryFn: async () => {
       const offset = page * limit
-      const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      })
       if (!response.ok) throw new Error("Failed to fetch products")
       return response.json()
     },
@@ -37,7 +36,11 @@ export default function ProductsPage() {
   const handleDelete = async (product: any) => {
     if (!confirm("Are you sure you want to delete this product?")) return
     try {
-      await fetch(`/api/products/${product.id}`, { method: "DELETE" })
+      const token = localStorage.getItem('token')
+      await fetch(`/api/products/${product.id}`, {
+        method: "DELETE",
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
       queryClient.invalidateQueries({ queryKey: ["products"] })
     } catch (err) {
       alert("Failed to delete product")

@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { login as apiLogin, verifyAuth, logout as apiLogout, User } from "@lib/data/backend-api";
 
 interface AuthContextType {
   token: string | null;
   setToken: (token: string | null) => void;
-  customer: any | null;
-  setCustomer: (customer: any | null) => void;
+  customer: User | null;
+  setCustomer: (customer: User | null) => void;
   isLoading: boolean;
   checkAuth: () => Promise<void>;
   logout: () => void;
@@ -16,10 +17,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => {
     return localStorage.getItem("auth_token");
   });
-  const [customer, setCustomer] = useState<any | null>(null);
+  const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const BACKEND_URL = (import.meta as any).env?.VITE_BACKEND_API_URL || 'http://localhost:3000/api'
 
   const setToken = (newToken: string | null) => {
     if (newToken) {
@@ -30,9 +29,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokenState(newToken);
   };
 
-  const logout = () => {
-    setToken(null);
-    setCustomer(null);
+  const logout = async () => {
+    try {
+      await apiLogout();
+    } catch {
+    } finally {
+      setToken(null);
+      setCustomer(null);
+    }
   };
 
   const checkAuth = async () => {
@@ -45,17 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch(`${BACKEND_URL}/auth`, {
-        method: 'GET',
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${storedToken}`,
-        },
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCustomer(data.user);
+      const { user } = await verifyAuth(storedToken);
+      if (user) {
+        setCustomer(user);
         setToken(storedToken);
       } else {
         setToken(null);

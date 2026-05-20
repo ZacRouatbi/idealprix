@@ -138,6 +138,41 @@ export class OrderService {
       total_amount: parseFloat(result.rows[0].total_amount),
     }
   }
+
+  async getCustomerOrders(customerId: string, filters?: OrderFilters): Promise<PaginatedResponse<Order>> {
+    let query = 'SELECT * FROM orders WHERE customer_id = $1'
+    const conditions: string[] = []
+    const params: any[] = [customerId]
+    let paramIndex = 2
+
+    if (filters?.status) {
+      conditions.push(`status = $${paramIndex++}`)
+      params.push(filters.status)
+    }
+
+    if (conditions.length > 0) {
+      query += ' AND ' + conditions.join(' AND ')
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT ${filters?.limit || 50} OFFSET ${filters?.offset || 0}`
+
+    const result = await db.query(query, params)
+    
+    const countConditions = conditions.length > 0 ? ' AND ' + conditions.join(' AND ') : ''
+    const countResult = await db.query(
+      `SELECT COUNT(*) FROM orders WHERE customer_id = $1${countConditions}`,
+      [customerId, ...params.slice(1)]
+    )
+
+    return {
+      data: result.rows as Order[],
+      count: parseInt(countResult.rows[0].count),
+      limit: filters?.limit || 50,
+      offset: filters?.offset || 0,
+      page: Math.floor((filters?.offset || 0) / (filters?.limit || 50)) + 1,
+      totalPages: Math.ceil(parseInt(countResult.rows[0].count) / (filters?.limit || 50)),
+    }
+  }
 }
 
 export const orderService = new OrderService()
