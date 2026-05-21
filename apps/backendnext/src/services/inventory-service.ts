@@ -81,16 +81,34 @@ export class InventoryService {
     quantity?: number,
     location?: string
   ): Promise<InventoryItem> {
-    const result = await db.query(
-      `UPDATE inventory 
-       SET quantity = COALESCE($1, quantity),
-           location = COALESCE($2, location),
-           last_updated = NOW()
-       WHERE product_id = $3
-       RETURNING *`,
-      [quantity, location, productId]
-    )
+    const queries: string[] = []
+    const values: any[] = []
+    let paramIndex = 1
 
+    if (quantity !== undefined) {
+      queries.push(`quantity = $${paramIndex++}`)
+      values.push(quantity)
+    }
+
+    if (location !== undefined) {
+      queries.push(`location = $${paramIndex++}`)
+      values.push(location)
+    }
+
+    if (queries.length === 0) {
+      const result = await db.query('SELECT * FROM inventory WHERE product_id = $1', [productId])
+      return result.rows[0] as InventoryItem
+    }
+
+    values.push(productId)
+
+    const query = `UPDATE inventory 
+       SET ${queries.join(', ')},
+           last_updated = NOW()
+       WHERE product_id = $${paramIndex}
+       RETURNING *`
+
+    const result = await db.query(query, values)
     return result.rows[0] as InventoryItem
   }
 

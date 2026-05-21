@@ -12,7 +12,12 @@ import Link from "next/link"
 import { InventoryItem } from "@/services/inventory-service"
 
 async function getInventoryItem(productId: string) {
-  const response = await fetch(`/api/inventory/${productId}`)
+  const token = localStorage.getItem('token')
+  const response = await fetch(`/api/inventory/${productId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    }
+  })
   if (!response.ok) throw new Error("Failed to fetch inventory item")
   return response.json()
 }
@@ -49,9 +54,13 @@ export default function InventoryAdjustPage({ params }: { params: Promise<{ id: 
     setError("")
 
     try {
+      const token = localStorage.getItem('token')
       const response = await fetch(`/api/inventory/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({ quantity: adjustAmount, location }),
       })
 
