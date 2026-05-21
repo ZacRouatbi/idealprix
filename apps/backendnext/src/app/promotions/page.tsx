@@ -126,6 +126,20 @@ export default function PromotionsPage() {
     }
   }
 
+  const handleDeletePromoCode = async (promoCode: PromoCode) => {
+    if (!confirm("Are you sure you want to delete this promo code?")) return
+    try {
+      const token = getToken()
+      await fetch(`/api/promo-codes/${promoCode.id}`, {
+        method: "DELETE",
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      queryClient.invalidateQueries({ queryKey: ["promo-codes"] })
+    } catch (err) {
+      alert("Failed to delete promo code")
+    }
+  }
+
   const handleCreatePromoCode = async () => {
     if (!promoCodeData.code || !promoCodeData.discountValue || !promoCodeData.startDate || !promoCodeData.endDate) {
       alert("Please fill in all required fields")
@@ -228,7 +242,7 @@ export default function PromotionsPage() {
 
   const promoCodesTable = useReactTable({
     data: promoCodes?.data || [],
-    columns: promoCodeColumns(),
+    columns: promoCodeColumns(handleDeletePromoCode),
     state: {
       columnFilters: promoCodeFilters,
     },
