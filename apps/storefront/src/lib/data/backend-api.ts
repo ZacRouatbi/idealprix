@@ -124,6 +124,28 @@ export async function fetchCategoryBySlug(slug: string): Promise<Category | null
   }
 }
 
+/* ─── Promotion Types ─── */
+export interface ActivePromotion {
+  id: string
+  targetType: 'product' | 'category'
+  targetId: string
+  discountType: 'percentage' | 'fixed'
+  discountValue: number
+  startDate: string
+  endDate: string
+}
+
+export async function fetchActivePromotions(): Promise<ActivePromotion[]> {
+  try {
+    const qs = new URLSearchParams({ is_active: 'true', limit: '200' })
+    const result = await apiClient<{ data: ActivePromotion[] }>(`/public/promotions?${qs}`)
+    // The public API already filters to currently running promotions
+    return result.data ?? []
+  } catch {
+    return []
+  }
+}
+
 /* ─── Order Types ─── */
 export interface Order {
   id: string

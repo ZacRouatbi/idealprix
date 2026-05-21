@@ -50,7 +50,7 @@ export class CategoryService {
 
     const result = await db.query(query, params)
     
-    const countResult = await db.query('SELECT COUNT(*) FROM categories' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''), params)
+    const countResult = await db.query('SELECT COUNT(*) FROM categories c' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''), params)
 
     return {
       data: result.rows as Category[],

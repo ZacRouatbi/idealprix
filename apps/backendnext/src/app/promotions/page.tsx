@@ -2,90 +2,59 @@
 
 import { useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { DataTable } from "@/components/data-table"
 import { promotionColumns, Promotion } from "@/components/columns/promotion-columns"
 import { promoCodeColumns, PromoCode } from "@/components/columns/promo-code-columns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Select, SelectItem } from "@/components/ui/select"
-import { Plus, RefreshCw, Search, Ticket, Calendar as CalendarIcon, Tag, Percent, DollarSign } from "lucide-react"
+import { Combobox } from "@/components/ui/combobox"
+import { Plus, RefreshCw, Search, Ticket, Tag, Percent, DollarSign } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useReactTable, getCoreRowModel, getSortedRowModel, SortingState, ColumnFiltersState, getFilteredRowModel } from "@tanstack/react-table"
 
-const mockPromotions: Promotion[] = [
-  {
-    id: "1",
-    targetType: "product",
-    targetId: "prod-1",
-    targetName: "iPhone 15 Pro",
-    discountType: "percentage",
-    discountValue: 15,
-    startDate: "2026-06-01T00:00:00Z",
-    endDate: "2026-06-30T23:59:59Z",
-    isActive: true,
-  },
-  {
-    id: "2",
-    targetType: "category",
-    targetId: "cat-1",
-    targetName: "Electronics",
-    discountType: "fixed",
-    discountValue: 5000,
-    startDate: "2026-05-15T00:00:00Z",
-    endDate: "2026-05-31T23:59:59Z",
-    isActive: true,
-  },
-  {
-    id: "3",
-    targetType: "product",
-    targetId: "prod-2",
-    targetName: "Samsung Galaxy S24",
-    discountType: "percentage",
-    discountValue: 10,
-    startDate: "2026-06-10T00:00:00Z",
-    endDate: "2026-07-10T23:59:59Z",
-    isActive: false,
-  },
-]
-
-const mockPromoCodes: PromoCode[] = [
-  {
-    id: "1",
-    code: "SUMMER2026",
-    discountType: "percentage",
-    discountValue: 15,
-    startDate: "2026-06-01T00:00:00Z",
-    endDate: "2026-06-30T23:59:59Z",
-    minOrderValue: 10000,
-    usageLimit: 100,
-    usedCount: 23,
-    isActive: true,
-  },
-  {
-    id: "2",
-    code: "WELCOME5000",
-    discountType: "fixed",
-    discountValue: 5000,
-    startDate: "2026-05-01T00:00:00Z",
-    endDate: "2026-05-31T23:59:59Z",
-    minOrderValue: 0,
-    usageLimit: 50,
-    usedCount: 50,
-    isActive: false,
-  },
-]
-
-async function getPromotions(): Promise<Promotion[]> {
-  await new Promise(resolve => setTimeout(resolve, 500))
-  return mockPromotions
+function getToken() {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem('token')
+  }
+  return null
 }
 
-async function getPromoCodes(): Promise<PromoCode[]> {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  return mockPromoCodes
+async function fetchPromotions() {
+  const token = getToken()
+  const response = await fetch(`/api/promotions?limit=100`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!response.ok) throw new Error("Failed to fetch promotions")
+  return response.json()
+}
+
+async function fetchPromoCodes() {
+  const token = getToken()
+  const response = await fetch(`/api/promo-codes?limit=100`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!response.ok) throw new Error("Failed to fetch promo codes")
+  return response.json()
+}
+
+async function fetchProducts() {
+  const token = getToken()
+  const response = await fetch(`/api/products?limit=100`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!response.ok) throw new Error("Failed to fetch products")
+  return response.json()
+}
+
+async function fetchCategories() {
+  const token = getToken()
+  const response = await fetch(`/api/categories?limit=100`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!response.ok) throw new Error("Failed to fetch categories")
+  return response.json()
 }
 
 export default function PromotionsPage() {
@@ -101,22 +70,60 @@ export default function PromotionsPage() {
     endDate: "",
     usageLimit: "",
   })
+  const [discountForm, setDiscountForm] = useState({
+    targetType: "product",
+    targetId: "",
+    targetName: "",
+    discountType: "percentage" as "percentage" | "fixed",
+    discountValue: "",
+    startDate: "",
+    endDate: "",
+  })
 
   const { data: promotions, isLoading: promotionsLoading, error: promotionsError, refetch: refetchPromotions } = useQuery({
     queryKey: ["promotions"],
-    queryFn: getPromotions,
+    queryFn: fetchPromotions,
   })
 
   const { data: promoCodes, isLoading: promoCodesLoading, error: promoCodesError } = useQuery({
     queryKey: ["promo-codes"],
-    queryFn: getPromoCodes,
+    queryFn: fetchPromoCodes,
   })
+
+  const { data: products } = useQuery({
+    queryKey: ["products-search"],
+    queryFn: fetchProducts,
+  })
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories-search"],
+    queryFn: fetchCategories,
+  })
+
+  const productOptions: { value: string; label: string }[] = (products?.data || []).map((p: any) => ({
+    value: p.id,
+    label: `${p.name} (${p.sku || 'N/A'}) - ${parseFloat(p.price).toLocaleString()} TND`,
+  }))
+
+  const categoryOptions: { value: string; label: string }[] = (categories?.data || []).map((c: any) => ({
+    value: c.id,
+    label: c.name,
+  }))
+
+  const targetOptions = discountForm.targetType === "product" ? productOptions : categoryOptions
 
   const handleDeletePromotion = async (promotion: Promotion) => {
     if (!confirm("Are you sure you want to delete this promotion?")) return
-    queryClient.setQueryData(["promotions"], (old: Promotion[] | undefined) =>
-      old?.filter(p => p.id !== promotion.id)
-    )
+    try {
+      const token = getToken()
+      await fetch(`/api/promotions/${promotion.id}`, {
+        method: "DELETE",
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      queryClient.invalidateQueries({ queryKey: ["promotions"] })
+    } catch (err) {
+      alert("Failed to delete promotion")
+    }
   }
 
   const handleCreatePromoCode = async () => {
@@ -124,39 +131,91 @@ export default function PromotionsPage() {
       alert("Please fill in all required fields")
       return
     }
-    
-    const newPromoCode: PromoCode = {
-      id: Date.now().toString(),
-      code: promoCodeData.code,
-      discountType: promoCodeData.discountType,
-      discountValue: parseFloat(promoCodeData.discountValue),
-      startDate: new Date(promoCodeData.startDate).toISOString(),
-      endDate: new Date(promoCodeData.endDate).toISOString(),
-      minOrderValue: promoCodeData.minOrderValue ? parseFloat(promoCodeData.minOrderValue) : 0,
-      usageLimit: promoCodeData.usageLimit ? parseInt(promoCodeData.usageLimit) : undefined,
-      usedCount: 0,
-      isActive: true,
+
+    try {
+      const token = getToken()
+      const response = await fetch('/api/promo-codes', {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code: promoCodeData.code,
+          discountType: promoCodeData.discountType,
+          discountValue: parseFloat(promoCodeData.discountValue),
+          startDate: new Date(promoCodeData.startDate).toISOString(),
+          endDate: new Date(promoCodeData.endDate).toISOString(),
+          minOrderValue: promoCodeData.minOrderValue ? parseFloat(promoCodeData.minOrderValue) : 0,
+          usageLimit: promoCodeData.usageLimit ? parseInt(promoCodeData.usageLimit) : undefined,
+          isActive: true,
+        }),
+      })
+
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ["promo-codes"] })
+        setPromoCodeData({
+          code: "",
+          discountType: "percentage",
+          discountValue: "",
+          minOrderValue: "",
+          startDate: "",
+          endDate: "",
+          usageLimit: "",
+        })
+        alert(`Promo code ${promoCodeData.code} created successfully!`)
+      }
+    } catch (err) {
+      alert("Failed to create promo code")
     }
-    
-    queryClient.setQueryData(["promo-codes"], (old: PromoCode[] | undefined) => [...(old || []), newPromoCode])
-    alert(`Promo code ${promoCodeData.code} created successfully!`)
-    setPromoCodeData({
-      code: "",
-      discountType: "percentage",
-      discountValue: "",
-      minOrderValue: "",
-      startDate: "",
-      endDate: "",
-      usageLimit: "",
-    })
   }
 
   const handleApplyDiscount = async () => {
-    alert("Discount applied successfully!")
+    if (!discountForm.targetId || !discountForm.discountValue || !discountForm.startDate || !discountForm.endDate) {
+      alert("Please fill in all required fields")
+      return
+    }
+
+    try {
+      const token = getToken()
+      const response = await fetch('/api/promotions', {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          targetType: discountForm.targetType,
+          targetId: discountForm.targetId,
+          targetName: discountForm.targetName || discountForm.targetId,
+          discountType: discountForm.discountType,
+          discountValue: parseFloat(discountForm.discountValue),
+          startDate: new Date(discountForm.startDate).toISOString(),
+          endDate: new Date(discountForm.endDate).toISOString(),
+          isActive: true,
+        }),
+      })
+
+      if (response.ok) {
+        queryClient.invalidateQueries({ queryKey: ["promotions"] })
+        setDiscountForm({
+          targetType: "product",
+          targetId: "",
+          targetName: "",
+          discountType: "percentage",
+          discountValue: "",
+          startDate: "",
+          endDate: "",
+        })
+        alert("Discount applied successfully!")
+      }
+    } catch (err) {
+      alert("Failed to apply discount")
+    }
   }
 
   const promotionsTable = useReactTable({
-    data: promotions || [],
+    data: promotions?.data || [],
     columns: promotionColumns(handleDeletePromotion),
     state: {
       sorting,
@@ -168,7 +227,7 @@ export default function PromotionsPage() {
   })
 
   const promoCodesTable = useReactTable({
-    data: promoCodes || [],
+    data: promoCodes?.data || [],
     columns: promoCodeColumns(),
     state: {
       columnFilters: promoCodeFilters,
@@ -234,24 +293,30 @@ export default function PromotionsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Target Type</label>
-                <Select defaultValue="product">
+                <Select value={discountForm.targetType} onChange={(e) => setDiscountForm({...discountForm, targetType: e.target.value as "product" | "category", targetId: "", targetName: ""})}>
                   <SelectItem value="product">Product</SelectItem>
                   <SelectItem value="category">Category</SelectItem>
                 </Select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Search Product/Category</label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search..."
-                    className="pl-8"
-                  />
-                </div>
+                <Combobox
+                  options={targetOptions}
+                  value={discountForm.targetId}
+                  onChange={(v) => {
+                    const found = targetOptions.find(o => o.value === v)
+                    setDiscountForm({
+                      ...discountForm,
+                      targetId: v,
+                      targetName: found ? found.label : v,
+                    })
+                  }}
+                  placeholder="Select..."
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Discount Type</label>
-                <Select defaultValue="percentage">
+                <Select value={discountForm.discountType} onChange={(e) => setDiscountForm({...discountForm, discountType: e.target.value as "percentage" | "fixed"})}>
                   <SelectItem value="percentage">Percentage (%)</SelectItem>
                   <SelectItem value="fixed">Fixed Amount (DT)</SelectItem>
                 </Select>
@@ -264,15 +329,17 @@ export default function PromotionsPage() {
                 <Input
                   type="number"
                   placeholder="Enter value (e.g., 10 or 5000)"
+                  value={discountForm.discountValue}
+                  onChange={(e) => setDiscountForm({...discountForm, discountValue: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Start Date</label>
-                <Input type="date" />
+                <Input type="date" value={discountForm.startDate} onChange={(e) => setDiscountForm({...discountForm, startDate: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">End Date</label>
-                <Input type="date" />
+                <Input type="date" value={discountForm.endDate} onChange={(e) => setDiscountForm({...discountForm, endDate: e.target.value})} />
               </div>
             </div>
 
@@ -305,8 +372,8 @@ export default function PromotionsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Discount Type</label>
-                <Select
-                  defaultValue={promoCodeData.discountType}
+<Select
+                  value={promoCodeData.discountType}
                   onChange={(e) => setPromoCodeData({ ...promoCodeData, discountType: e.target.value as "percentage" | "fixed" })}
                 >
                   <SelectItem value="percentage">Percentage (%)</SelectItem>

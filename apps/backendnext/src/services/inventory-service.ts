@@ -51,7 +51,7 @@ export class InventoryService {
     const result = await db.query(query, params)
     
     const countResult = await db.query(
-      'SELECT COUNT(*) FROM inventory' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
+      'SELECT COUNT(*) FROM inventory i' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
       params
     )
 

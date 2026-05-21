@@ -77,6 +77,35 @@ async function seed() {
       )
     }
 
+    // Insert sample promotions
+    const promos = [
+      { targetType: 'product', targetId: products[0].id, targetName: 'Smartphone X', discountType: 'percentage', discountValue: 15, startDate: '2026-06-01', endDate: '2026-06-30', isActive: true },
+      { targetType: 'category', targetId: electronicsId, targetName: 'Electronics', discountType: 'fixed', discountValue: 5000, startDate: '2026-05-15', endDate: '2026-05-31', isActive: true },
+      { targetType: 'product', targetId: products[1].id, targetName: 'Laptop Pro', discountType: 'percentage', discountValue: 10, startDate: '2026-06-10', endDate: '2026-07-10', isActive: false },
+    ]
+
+    for (const promo of promos) {
+      await client.query(
+        `INSERT INTO promotions (id, target_type, target_id, target_name, discount_type, discount_value, start_date, end_date, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+        [uuidv4(), promo.targetType, promo.targetId, promo.targetName, promo.discountType, promo.discountValue, promo.startDate, promo.endDate, promo.isActive]
+      )
+    }
+
+    // Insert sample promo codes
+    const promoCodes = [
+      { code: 'SUMMER2026', discountType: 'percentage', discountValue: 15, startDate: '2026-06-01', endDate: '2026-06-30', minOrderValue: 10000, usageLimit: 100, usedCount: 23, isActive: true },
+      { code: 'WELCOME5000', discountType: 'fixed', discountValue: 5000, startDate: '2026-05-01', endDate: '2026-05-31', minOrderValue: 0, usageLimit: 50, usedCount: 50, isActive: false },
+    ]
+
+    for (const pc of promoCodes) {
+      await client.query(
+        `INSERT INTO promo_codes (id, code, discount_type, discount_value, start_date, end_date, min_order_value, usage_limit, used_count, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
+        [uuidv4(), pc.code, pc.discountType, pc.discountValue, pc.startDate, pc.endDate, pc.minOrderValue, pc.usageLimit, pc.usedCount, pc.isActive]
+      )
+    }
+
     await client.query('COMMIT')
     console.log('Database seeded successfully!')
   } catch (error) {
@@ -89,4 +118,4 @@ async function seed() {
   }
 }
 
-seed()
+// seed()

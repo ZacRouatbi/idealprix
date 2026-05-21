@@ -17,6 +17,12 @@ export type Promotion = {
   isActive: boolean
 }
 
+const safeFormatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "Invalid date"
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+}
+
 export const promotionColumns = (onDelete?: (promotion: Promotion) => void): ColumnDef<Promotion>[] => [
   {
     accessorKey: "targetType",
@@ -50,7 +56,7 @@ export const promotionColumns = (onDelete?: (promotion: Promotion) => void): Col
       const { discountType, discountValue } = row.original
       return (
         <div className="font-medium">
-          {discountType === "percentage" ? `${discountValue}%` : `${discountValue.toLocaleString()} DT`}
+          {discountType === "percentage" ? `${discountValue}%` : `${(discountValue || 0).toLocaleString()} DT`}
         </div>
       )
     },
@@ -58,26 +64,16 @@ export const promotionColumns = (onDelete?: (promotion: Promotion) => void): Col
   {
     accessorKey: "startDate",
     header: "Start Date",
-    cell: ({ row }) => {
-      const date = new Date(row.original.startDate)
-      return (
-        <div className="text-sm">
-          {date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </div>
-      )
-    },
+    cell: ({ row }) => (
+      <div className="text-sm">{safeFormatDate(row.original.startDate)}</div>
+    ),
   },
   {
     accessorKey: "endDate",
     header: "End Date",
-    cell: ({ row }) => {
-      const date = new Date(row.original.endDate)
-      return (
-        <div className="text-sm">
-          {date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </div>
-      )
-    },
+    cell: ({ row }) => (
+      <div className="text-sm">{safeFormatDate(row.original.endDate)}</div>
+    ),
   },
   {
     accessorKey: "isActive",

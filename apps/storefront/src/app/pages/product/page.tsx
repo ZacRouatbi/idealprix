@@ -119,8 +119,8 @@ export default function ProductPage() {
 
         <div className="flex flex-col lg:flex-row gap-8 lg:max-w-5xl mx-auto">
           {/* Images */}
-          <div className="flex-1 max-w-xl">
-            <div className="relative bg-white rounded-2xl overflow-hidden border border-[#E5E5E5] mb-3">
+          <div className="flex-1 lg:max-w-xl flex flex-col">
+            <div className="relative bg-white rounded-2xl overflow-hidden border border-[#E5E5E5] flex-1 flex items-center justify-center">
               {product.isPromo && (
                 <span className="absolute top-3 left-3 bg-[#D4302A] text-white text-xs font-bold px-2.5 py-1 rounded z-10">
                   Promo
@@ -129,7 +129,7 @@ export default function ProductPage() {
               <img
                 src={images[selectedImage]}
                 alt={product.title}
-                className="w-full h-80 lg:h-96 object-cover"
+                className="w-full h-full object-cover"
               />
               {images.length > 1 && (
                 <>
@@ -149,7 +149,7 @@ export default function ProductPage() {
               )}
             </div>
             {images.length > 1 && (
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap mt-3">
                 {images.map((img, i) => (
                   <button
                     key={i}
@@ -166,8 +166,8 @@ export default function ProductPage() {
           </div>
 
           {/* Info */}
-          <div className="flex-1 max-w-xl">
-            <div className="bg-white rounded-2xl p-6 border border-[#E5E5E5]">
+          <div className="flex-1 lg:max-w-xl flex flex-col">
+            <div className="bg-white rounded-2xl p-6 border border-[#E5E5E5] flex-1">
               <div className="flex items-center gap-2 mb-2">
                 {product.brand && (
                   <span className="text-xs font-semibold text-[#D4302A] uppercase tracking-wider">

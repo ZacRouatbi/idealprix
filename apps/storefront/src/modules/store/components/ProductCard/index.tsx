@@ -6,6 +6,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const isOnSale = product.isPromo && product.originalPrice && product.originalPrice > product.price
+
   return (
     <Link
       to={`/products/${product.handle}`}
@@ -17,7 +19,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           alt={product.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        {product.isPromo && (
+        {isOnSale && (
           <div className="absolute top-2 left-2 bg-[#D4302A] text-white text-xs font-bold px-2 py-0.5 rounded">
             -{product.discountPercent}%
           </div>
@@ -32,22 +34,22 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.title}
         </h3>
 
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 flex-wrap">
           <span
-            className="text-base font-bold text-[#1E1E1E]"
+            className={`text-base font-bold ${isOnSale ? "text-[#D4302A]" : "text-[#1E1E1E]"}`}
             style={{ fontFamily: "Poppins, sans-serif" }}
           >
             {formatPrice(product.price)}
           </span>
-          {product.originalPrice && (
+          {isOnSale && (
             <span className="text-xs text-[#717182] line-through">
-              {formatPrice(product.originalPrice)}
+              {formatPrice(product.originalPrice!)}
             </span>
           )}
         </div>
 
         {!product.inStock && (
-          <span className="text-xs text-[#D4302A] font-medium mt-1">
+          <span className="text-xs text-[#D4302A] font-medium mt-1 block">
             Rupture de stock
           </span>
         )}

@@ -19,6 +19,15 @@ export type PromoCode = {
   isActive: boolean
 }
 
+// Helper to safely format a date string, returning a fallback if invalid
+const safeFormat = (dateString: string, formatStr: string) => {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) {
+    return "Invalid date"
+  }
+  return format(date, formatStr)
+}
+
 export const promoCodeColumns = (): ColumnDef<PromoCode>[] => [
   {
     accessorKey: "code",
@@ -49,7 +58,7 @@ export const promoCodeColumns = (): ColumnDef<PromoCode>[] => [
       const { discountType, discountValue } = row.original
       return (
         <div className="font-medium">
-          {discountType === "percentage" ? `${discountValue}%` : `${discountValue.toLocaleString()} DT`}
+          {discountType === "percentage" ? `${discountValue}%` : `${(discountValue || 0).toLocaleString()} DT`}
         </div>
       )
     },
@@ -58,10 +67,9 @@ export const promoCodeColumns = (): ColumnDef<PromoCode>[] => [
     accessorKey: "startDate",
     header: "Start Date",
     cell: ({ row }) => {
-      const date = new Date(row.original.startDate)
       return (
         <div className="text-sm">
-          {format(date, "dd MMM yyyy")}
+          {safeFormat(row.original.startDate, "dd MMM yyyy")}
         </div>
       )
     },
@@ -70,10 +78,9 @@ export const promoCodeColumns = (): ColumnDef<PromoCode>[] => [
     accessorKey: "endDate",
     header: "End Date",
     cell: ({ row }) => {
-      const date = new Date(row.original.endDate)
       return (
         <div className="text-sm">
-          {format(date, "dd MMM yyyy")}
+          {safeFormat(row.original.endDate, "dd MMM yyyy")}
         </div>
       )
     },
