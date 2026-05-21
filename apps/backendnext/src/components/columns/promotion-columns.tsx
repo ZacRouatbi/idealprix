@@ -23,7 +23,10 @@ const safeFormatDate = (dateString: string) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
-export const promotionColumns = (onDelete?: (promotion: Promotion) => void): ColumnDef<Promotion>[] => [
+export const promotionColumns = (
+  onDelete?: (promotion: Promotion) => void,
+  onEdit?: (promotion: Promotion) => void
+): ColumnDef<Promotion>[] => [
   {
     accessorKey: "targetType",
     header: "Target Type",
@@ -118,7 +121,11 @@ export const promotionColumns = (onDelete?: (promotion: Promotion) => void): Col
 
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit && onEdit(promotion)}
+          >
             <Edit className="h-4 w-4" />
           </Button>
           {onDelete && (

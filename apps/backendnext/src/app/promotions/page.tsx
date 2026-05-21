@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectItem } from "@/components/ui/select"
 import { Combobox } from "@/components/ui/combobox"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Plus, RefreshCw, Search, Ticket, Tag, Percent, DollarSign } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -80,6 +81,11 @@ export default function PromotionsPage() {
     endDate: "",
   })
 
+  const [editingPromoCode, setEditingPromoCode] = useState<PromoCode | null>(null)
+  const [editEndDate, setEditEndDate] = useState("")
+  const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null)
+  const [editPromotionEndDate, setEditPromotionEndDate] = useState("")
+
   const { data: promotions, isLoading: promotionsLoading, error: promotionsError, refetch: refetchPromotions } = useQuery({
     queryKey: ["promotions"],
     queryFn: fetchPromotions,
@@ -126,6 +132,33 @@ export default function PromotionsPage() {
     }
   }
 
+  const handleEditPromotion = async (promotion: Promotion) => {
+    setEditingPromotion(promotion)
+    setEditPromotionEndDate(new Date(promotion.endDate).toISOString().split('T')[0])
+  }
+
+  const handleUpdatePromotionEndDate = async () => {
+    if (!editingPromotion || !editPromotionEndDate) return
+    try {
+      const token = getToken()
+      await fetch(`/api/promotions/${editingPromotion.id}`, {
+        method: "PUT",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          endDate: new Date(editPromotionEndDate).toISOString(),
+        }),
+      })
+      queryClient.invalidateQueries({ queryKey: ["promotions"] })
+      setEditingPromotion(null)
+      alert("Promotion updated successfully!")
+    } catch (err) {
+      alert("Failed to update promotion")
+    }
+  }
+
   const handleDeletePromoCode = async (promoCode: PromoCode) => {
     if (!confirm("Are you sure you want to delete this promo code?")) return
     try {
@@ -137,6 +170,33 @@ export default function PromotionsPage() {
       queryClient.invalidateQueries({ queryKey: ["promo-codes"] })
     } catch (err) {
       alert("Failed to delete promo code")
+    }
+  }
+
+  const handleEditPromoCode = async (promoCode: PromoCode) => {
+    setEditingPromoCode(promoCode)
+    setEditEndDate(new Date(promoCode.endDate).toISOString().split('T')[0])
+  }
+
+  const handleUpdatePromoCodeEndDate = async () => {
+    if (!editingPromoCode || !editEndDate) return
+    try {
+      const token = getToken()
+      await fetch(`/api/promo-codes/${editingPromoCode.id}`, {
+        method: "PUT",
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          endDate: new Date(editEndDate).toISOString(),
+        }),
+      })
+      queryClient.invalidateQueries({ queryKey: ["promo-codes"] })
+      setEditingPromoCode(null)
+      alert("Promo code updated successfully!")
+    } catch (err) {
+      alert("Failed to update promo code")
     }
   }
 
@@ -230,7 +290,7 @@ export default function PromotionsPage() {
 
   const promotionsTable = useReactTable({
     data: promotions?.data || [],
-    columns: promotionColumns(handleDeletePromotion),
+    columns: promotionColumns(handleDeletePromotion, handleEditPromotion),
     state: {
       sorting,
       columnFilters: [],
@@ -242,7 +302,7 @@ export default function PromotionsPage() {
 
   const promoCodesTable = useReactTable({
     data: promoCodes?.data || [],
-    columns: promoCodeColumns(handleDeletePromoCode),
+    columns: promoCodeColumns(handleDeletePromoCode, handleEditPromoCode),
     state: {
       columnFilters: promoCodeFilters,
     },
@@ -587,6 +647,58 @@ export default function PromotionsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!editingPromoCode} onOpenChange={() => setEditingPromoCode(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Promo Code</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">End Date</label>
+              <Input
+                type="date"
+                value={editEndDate}
+                onChange={(e) => setEditEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPromoCode(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdatePromoCodeEndDate}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingPromotion} onOpenChange={() => setEditingPromotion(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Promotion</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">End Date</label>
+              <Input
+                type="date"
+                value={editPromotionEndDate}
+                onChange={(e) => setEditPromotionEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPromotion(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdatePromotionEndDate}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

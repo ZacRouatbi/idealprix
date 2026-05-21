@@ -28,7 +28,10 @@ const safeFormat = (dateString: string, formatStr: string) => {
   return format(date, formatStr)
 }
 
-export const promoCodeColumns = (onDelete?: (promoCode: PromoCode) => void): ColumnDef<PromoCode>[] => [
+export const promoCodeColumns = (
+  onDelete?: (promoCode: PromoCode) => void,
+  onEdit?: (promoCode: PromoCode) => void
+): ColumnDef<PromoCode>[] => [
   {
     accessorKey: "code",
     header: "Code",
@@ -150,7 +153,11 @@ export const promoCodeColumns = (onDelete?: (promoCode: PromoCode) => void): Col
       const promoCode = row.original
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit && onEdit(promoCode)}
+          >
             <Edit className="h-4 w-4" />
           </Button>
           {onDelete && (
