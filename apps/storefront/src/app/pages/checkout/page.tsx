@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../../../lib/context/CartContext";
 import { formatPrice } from "../../../lib/data/products";
+import { fetchShippingProviders, type ShippingProvider } from "../../../lib/data/backend-api";
 
 type Step = 1 | 2 | 3 | 4;
 type PaymentMethod = "online" | "cod";
@@ -35,11 +36,6 @@ const API_BASE_URL =
   (import.meta as any).env?.VITE_BACKEND_API_URL || 
   (import.meta as any).env?.VITE_BACKEND_URL || 
   "http://localhost:3000/api";
-
-const SHIPPING_OPTIONS: { id: string; name: string; amount: number }[] = [
-  { id: "standard", name: "Standard Delivery", amount: 7000 },
-  { id: "pickup", name: "On-site Pickup", amount: 0 },
-];
 
 async function checkoutFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const controller = new AbortController();
@@ -81,15 +77,25 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState<AddressForm>({
     fullName: "", phone: "", email: "", address: "", city: "", postalCode: "", notes: "",
   });
-  const [shippingOptionId, setShippingOptionId] = useState<string>("standard");
+  const [shippingProviders, setShippingProviders] = useState<ShippingProvider[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedShipping = SHIPPING_OPTIONS.find((o) => o.id === shippingOptionId);
-  const shippingCost = selectedShipping?.amount ?? 0;
+  useEffect(() => {
+    fetchShippingProviders().then(providers => {
+      setShippingProviders(providers);
+      if (providers.length > 0) {
+        setSelectedProviderId(providers[0].id);
+      }
+    });
+  }, []);
+
+  const selectedProvider = shippingProviders.find(p => p.id === selectedProviderId);
+  const shippingCost = selectedProvider?.price ?? 0;
   const total = subtotal + shippingCost;
 
   const steps = [
@@ -144,7 +150,7 @@ export default function CheckoutPage() {
           phone: address.phone,
         },
         subtotal: subtotal,
-        shippingAmount: shippingCost,
+        shippingProviderId: selectedProviderId,
         notes: address.notes || undefined,
       };
 
@@ -373,31 +379,31 @@ export default function CheckoutPage() {
                 <p className="text-sm text-[#717182] mb-5">Choose your delivery option</p>
 
                 <div className="space-y-3 mb-6">
-                  {SHIPPING_OPTIONS.map((option) => {
-                    const Icon = option.id === "pickup" ? Check : Truck;
+                  {shippingProviders.map((provider) => {
+                    const Icon = provider.service_type === "pickup" ? Check : Truck;
                     return (
-                      <label key={option.id}
+                      <label key={provider.id}
                         className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${
-                          shippingOptionId === option.id
+                          selectedProviderId === provider.id
                             ? "border-[#D4302A] bg-red-50"
                             : "border-[#E5E5E5] hover:border-[#1E1E1E]"
                         }`}>
-                        <input type="radio" name="delivery" value={option.id}
-                          checked={shippingOptionId === option.id}
-                          onChange={() => setShippingOptionId(option.id)}
+                        <input type="radio" name="delivery" value={provider.id}
+                          checked={selectedProviderId === provider.id}
+                          onChange={() => setSelectedProviderId(provider.id)}
                           className="accent-[#D4302A]" />
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          shippingOptionId === option.id ? "bg-[#D4302A] text-white" : "bg-[#F9F8F7] text-[#717182]"
+                          selectedProviderId === provider.id ? "bg-[#D4302A] text-white" : "bg-[#F9F8F7] text-[#717182]"
                         }`}>
                           <Icon className="w-5 h-5" />
                         </div>
                         <div className="flex-1">
                           <p className="font-semibold text-sm text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
-                            {option.name}
+                            {provider.name}
                           </p>
                         </div>
                         <span className="font-bold text-[#1E1E1E] text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>
-                          {option.amount > 0 ? formatPrice(option.amount) : "Free"}
+                          {provider.price > 0 ? formatPrice(provider.price) : "Free"}
                         </span>
                       </label>
                     );
@@ -410,7 +416,7 @@ export default function CheckoutPage() {
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     ← Back
                   </button>
-                  <button onClick={() => setCurrentStep(3)} disabled={isLoading || !shippingOptionId}
+                  <button onClick={() => setCurrentStep(3)} disabled={isLoading || !selectedProviderId}
                     className="flex-grow bg-[#D4302A] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     <>Continue to Payment <ChevronRight className="w-4 h-4" /></>
@@ -511,7 +517,7 @@ export default function CheckoutPage() {
 
                   <div className="border-t border-[#E5E5E5] pt-3">
                     <p className="text-xs font-semibold text-[#717182] uppercase tracking-wider mb-2">Delivery Method</p>
-                    <p className="text-sm text-[#1E1E1E]">{selectedShipping?.name}</p>
+                    <p className="text-sm text-[#1E1E1E]">{selectedProvider?.name || "Not selected"}</p>
                   </div>
 
                   <div className="border-t border-[#E5E5E5] pt-3">
@@ -576,10 +582,10 @@ export default function CheckoutPage() {
                   <span className="text-[#717182]">Subtotal</span>
                   <span className="font-medium text-[#1E1E1E]">{formatPrice(subtotal)}</span>
                 </div>
-                {selectedShipping && (
+                {selectedProvider && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#717182]">{selectedShipping.name}</span>
-                    <span className="font-medium text-[#1E1E1E]">{selectedShipping.amount > 0 ? formatPrice(selectedShipping.amount) : "Free"}</span>
+                    <span className="text-[#717182]">{selectedProvider.name}</span>
+                    <span className="font-medium text-[#1E1E1E]">{selectedProvider.price > 0 ? formatPrice(selectedProvider.price) : "Free"}</span>
                   </div>
                 )}
               </div>

@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
 import { validateCreateOrderInput } from '@/lib/validation'
 import { rateLimit } from '@/lib/validation'
+import { shippingService } from '@/services/shipping-service'
 
 const publicRateLimit = rateLimit({
   windowMs: 60000,
@@ -59,7 +60,25 @@ export async function POST(request: NextRequest) {
     }
 
     const calculatedSubtotal = data.items.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0)
-    const calculatedTotal = calculatedSubtotal + (data.shippingAmount || 0)
+    
+    // Validate shipping - either use provider ID or validate shipping amount matches a valid provider
+    let shippingAmount = 0
+    if (data.shippingProviderId) {
+      const provider = await shippingService.getProviderById(data.shippingProviderId)
+      if (!provider) {
+        return addCorsHeaders(NextResponse.json({ error: 'Invalid shipping provider' }, { status: 400 }), request)
+      }
+      shippingAmount = provider.price
+    } else if (typeof data.shippingAmount === 'number') {
+      const providers = await shippingService.getActiveProviders()
+      const validAmount = providers.some(p => p.price === data.shippingAmount)
+      if (!validAmount && data.shippingAmount !== 0) {
+        return addCorsHeaders(NextResponse.json({ error: 'Invalid shipping amount' }, { status: 400 }), request)
+      }
+      shippingAmount = data.shippingAmount
+    }
+    
+    const calculatedTotal = calculatedSubtotal + shippingAmount
 
     if (Math.abs(calculatedSubtotal - data.subtotal) > 0.01) {
       return addCorsHeaders(NextResponse.json({ error: 'Subtotal mismatch' }, { status: 400 }), request)
@@ -79,7 +98,7 @@ export async function POST(request: NextRequest) {
           uuidv4(), orderNumber, data.customerEmail, data.customerName || null, data.customerPhone || null,
           JSON.stringify(data.shippingAddress),
           data.billingAddress ? JSON.stringify(data.billingAddress) : JSON.stringify(data.shippingAddress),
-          calculatedSubtotal, data.shippingAmount || 0, calculatedTotal, 'pending', data.notes || null,
+          calculatedSubtotal, shippingAmount, calculatedTotal, 'pending', data.notes || null,
         ]
       )
 

@@ -146,6 +146,26 @@ export async function fetchActivePromotions(): Promise<ActivePromotion[]> {
   }
 }
 
+/* ─── Shipping Types ─── */
+export interface ShippingProvider {
+  id: string
+  name: string
+  phone?: string
+  price: number
+  service_type: 'standard' | 'express' | 'pickup'
+}
+
+export async function fetchShippingProviders(): Promise<ShippingProvider[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/public/shipping`)
+    if (!response.ok) throw new Error('Failed to fetch')
+    const result = await response.json()
+    return result.providers || []
+  } catch {
+    return []
+  }
+}
+
 /* ─── Order Types ─── */
 export interface Order {
   id: string

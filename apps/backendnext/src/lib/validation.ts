@@ -110,7 +110,8 @@ export interface CreateOrderInput {
     phone?: string
   }
   subtotal: number
-  shippingAmount: number
+  shippingAmount?: number
+  shippingProviderId?: string
   notes?: string
 }
 

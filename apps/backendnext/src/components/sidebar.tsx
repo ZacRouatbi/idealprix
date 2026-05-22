@@ -16,6 +16,7 @@ import {
   LogOut,
   User,
   Ticket,
+  Truck,
 } from "lucide-react"
 import { AccountModal } from "@/components/account-modal"
 import { useAuth } from "@/lib/context/auth-context"
@@ -55,6 +56,11 @@ const navigation = [
     name: "Promotions",
     href: "/promotions",
     icon: Ticket,
+  },
+  {
+    name: "Shipping",
+    href: "/shipping",
+    icon: Truck,
   },
   {
     name: "Analytics",
