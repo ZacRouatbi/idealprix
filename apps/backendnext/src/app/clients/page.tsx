@@ -1,13 +1,20 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { clientColumns } from "@/components/columns/client-columns"
+import { clientColumns, Client } from "@/components/columns/client-columns"
 import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { RefreshCw, Download } from "lucide-react"
+import { RefreshCw, Download, User, Mail, Phone, Calendar, Clock } from "lucide-react"
 import { exportToPDF } from "@/lib/export-utils"
+import { useState } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 async function getClients() {
   const token = localStorage.getItem('token')
@@ -26,9 +33,17 @@ export default function ClientsPage() {
     queryFn: getClients,
   })
 
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   const handleExport = () => {
     if (!data?.data) return
     exportToPDF(data.data, "clients", "Clients Report")
+  }
+
+  const handleRowClick = (client: Client) => {
+    setSelectedClient(client)
+    setIsModalOpen(true)
   }
 
   if (isLoading) {
@@ -78,7 +93,67 @@ export default function ClientsPage() {
           </Button>
         </div>
       </div>
-      <DataTable columns={clientColumns} data={data?.data || []} />
+      <DataTable columns={clientColumns} data={data?.data || []} onRowClick={handleRowClick} />
+      
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Client Details</DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Name:</span>
+                <span className="text-sm">{selectedClient.first_name} {selectedClient.last_name}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Email:</span>
+                <span className="text-sm">{selectedClient.email}</span>
+              </div>
+              
+              {selectedClient.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Phone:</span>
+                  <span className="text-sm">{selectedClient.phone}</span>
+                </div>
+              )}
+              
+              <div className="border-t pt-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Role:</span>
+                  <span className="text-sm capitalize">{selectedClient.role}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-sm font-medium">Status:</span>
+                  <span className={`px-2 py-1 text-xs rounded-full ${selectedClient.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {selectedClient.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+              
+              {selectedClient.last_login && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Last Login:</span>
+                  <span className="text-sm">{new Date(selectedClient.last_login).toLocaleString()}</span>
+                </div>
+              )}
+              
+              <div className="border-t pt-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Created:</span>
+                  <span className="text-sm">{new Date(selectedClient.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
