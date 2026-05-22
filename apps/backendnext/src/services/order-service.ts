@@ -71,14 +71,19 @@ export class OrderService {
       query += ' WHERE ' + conditions.join(' AND ')
     }
 
-    query += ` ORDER BY created_at DESC LIMIT ${filters?.limit || 50} OFFSET ${filters?.offset || 0}`
+    // Sanitize limit and offset to prevent SQL injection
+    const limit = Math.max(1, Math.min(100, filters?.limit || 50))
+    const offset = Math.max(0, filters?.offset || 0)
+    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
+    params.push(limit, offset)
 
-    const result = await db.query(query, params)
-    
-    const countResult = await db.query(
-      'SELECT COUNT(*) FROM orders' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
-      params
-    )
+const result = await db.query(query, params)
+
+      const countParams = conditions.length > 0 ? params.slice(0, params.length - 2) : []
+      const countResult = await db.query(
+        'SELECT COUNT(*) FROM orders' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
+        countParams
+      )
 
     return {
       data: result.rows as Order[],
@@ -139,7 +144,7 @@ export class OrderService {
     }
   }
 
-  async getCustomerOrders(customerId: string, filters?: OrderFilters): Promise<PaginatedResponse<Order>> {
+async getCustomerOrders(customerId: string, filters?: OrderFilters): Promise<PaginatedResponse<Order>> {
     let query = 'SELECT * FROM orders WHERE customer_id = $1'
     const conditions: string[] = []
     const params: any[] = [customerId]
@@ -154,15 +159,21 @@ export class OrderService {
       query += ' AND ' + conditions.join(' AND ')
     }
 
-    query += ` ORDER BY created_at DESC LIMIT ${filters?.limit || 50} OFFSET ${filters?.offset || 0}`
+    // Sanitize limit and offset to prevent SQL injection
+    const limit = Math.max(1, Math.min(100, filters?.limit || 50))
+    const offset = Math.max(0, filters?.offset || 0)
+    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
+    params.push(limit, offset)
 
     const result = await db.query(query, params)
     
+    // Build count query with correct parameters
     const countConditions = conditions.length > 0 ? ' AND ' + conditions.join(' AND ') : ''
+    const countParams = params.slice(0, conditions.length + 1)
     const countResult = await db.query(
-      `SELECT COUNT(*) FROM orders WHERE customer_id = $1${countConditions}`,
-      [customerId, ...params.slice(1)]
-    )
+       `SELECT COUNT(*) FROM orders WHERE customer_id = $1${countConditions}`,
+       countParams
+     )
 
     return {
       data: result.rows as Order[],

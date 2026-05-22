@@ -77,3 +77,81 @@ export function validateUUID(id: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return uuidRegex.test(id)
 }
+
+// Order validation
+export interface OrderItemInput {
+  productId: string
+  productName: string
+  productSku?: string
+  quantity: number
+  unitPrice: number
+  productImage?: string
+}
+
+export interface CreateOrderInput {
+  items: OrderItemInput[]
+  customerEmail: string
+  customerName?: string
+  customerPhone?: string
+  shippingAddress: {
+    fullName: string
+    address: string
+    city: string
+    postalCode: string
+    countryCode: string
+    phone?: string
+  }
+  billingAddress?: {
+    fullName: string
+    address: string
+    city: string
+    postalCode: string
+    countryCode: string
+    phone?: string
+  }
+  subtotal: number
+  shippingAmount: number
+  notes?: string
+}
+
+export function validateCreateOrderInput(data: any): { valid: boolean; error?: string } {
+  if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+    return { valid: false, error: 'Order must contain at least one item' }
+  }
+
+  if (!data.customerEmail || typeof data.customerEmail !== 'string') {
+    return { valid: false, error: 'Customer email is required' }
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(data.customerEmail)) {
+    return { valid: false, error: 'Invalid customer email format' }
+  }
+
+  if (!data.shippingAddress) {
+    return { valid: false, error: 'Shipping address is required' }
+  }
+
+  const requiredAddressFields = ['fullName', 'address', 'city', 'postalCode', 'countryCode']
+  for (const field of requiredAddressFields) {
+    if (!data.shippingAddress[field]) {
+      return { valid: false, error: `Shipping address ${field} is required` }
+    }
+  }
+
+  if (typeof data.subtotal !== 'number' || data.subtotal < 0) {
+    return { valid: false, error: 'Invalid subtotal amount' }
+  }
+
+  // Validate items
+  for (const item of data.items) {
+    if (!item.productId || !item.quantity || !item.unitPrice) {
+      return { valid: false, error: 'Each order item must have productId, quantity, and unitPrice' }
+    }
+    if (item.quantity <= 0 || item.unitPrice < 0) {
+      return { valid: false, error: 'Invalid item quantity or price' }
+    }
+  }
+
+  return { valid: true }
+}

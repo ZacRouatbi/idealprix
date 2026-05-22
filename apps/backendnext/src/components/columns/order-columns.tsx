@@ -52,9 +52,7 @@ export const orderColumns = (
           <SelectContent>
             {statusOrder.map((status) => (
               <SelectItem key={status} value={status}>
-                <Badge className={statusColors[status] || ""}>
-                  {status}
-                </Badge>
+                {status}
               </SelectItem>
             ))}
           </SelectContent>
