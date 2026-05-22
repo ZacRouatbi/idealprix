@@ -12,6 +12,13 @@ export interface Order {
   tax_amount: number
   shipping_amount: number
   total_amount: number
+  shipping_provider_id?: string
+  shipping_provider?: {
+    id: string
+    name: string
+    phone?: string
+    service_type: 'standard' | 'express' | 'pickup'
+  } | null
   currency: string
   customer_email: string
   customer_name?: string
@@ -47,7 +54,7 @@ export interface OrderFilters extends FilterParams {
 
 export class OrderService {
   async listOrders(filters?: OrderFilters): Promise<PaginatedResponse<Order>> {
-    let query = 'SELECT * FROM orders'
+    let query = 'SELECT o.*, sp.id as provider_id, sp.name as provider_name, sp.phone as provider_phone, sp.service_type as provider_service_type FROM orders o LEFT JOIN shipping_providers sp ON o.shipping_provider_id = sp.id'
     const conditions: string[] = []
     const params: any[] = []
     let paramIndex = 1
@@ -77,16 +84,27 @@ export class OrderService {
     query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
     params.push(limit, offset)
 
-const result = await db.query(query, params)
+    const result = await db.query(query, params)
 
-      const countParams = conditions.length > 0 ? params.slice(0, params.length - 2) : []
-      const countResult = await db.query(
-        'SELECT COUNT(*) FROM orders' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
-        countParams
-      )
+    const countParams = conditions.length > 0 ? params.slice(0, params.length - 2) : []
+    const countResult = await db.query(
+      'SELECT COUNT(*) FROM orders' + (conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''),
+      countParams
+    )
+
+    // Transform results to include shipping_provider
+    const orders = result.rows.map((row: any) => ({
+      ...row,
+      shipping_provider: row.provider_id ? {
+        id: row.provider_id,
+        name: row.provider_name,
+        phone: row.provider_phone,
+        service_type: row.provider_service_type,
+      } : null,
+    })) as Order[]
 
     return {
-      data: result.rows as Order[],
+      data: orders,
       count: parseInt(countResult.rows[0].count),
       limit: filters?.limit || 50,
       offset: filters?.offset || 0,
@@ -96,16 +114,29 @@ const result = await db.query(query, params)
   }
 
   async getOrder(id: string): Promise<OrderWithItems | null> {
-    const orderResult = await db.query('SELECT * FROM orders WHERE id = $1', [id])
+    const orderResult = await db.query(
+      `SELECT o.*, sp.id as provider_id, sp.name as provider_name, sp.phone as provider_phone, sp.service_type as provider_service_type
+       FROM orders o
+       LEFT JOIN shipping_providers sp ON o.shipping_provider_id = sp.id
+       WHERE o.id = $1`,
+      [id]
+    )
     
     if (orderResult.rows.length === 0) return null
 
+    const row = orderResult.rows[0]
     const itemsResult = await db.query('SELECT * FROM order_items WHERE order_id = $1', [id])
 
     return {
-      ...orderResult.rows[0] as Order,
+      ...row,
+      shipping_provider: row.provider_id ? {
+        id: row.provider_id,
+        name: row.provider_name,
+        phone: row.provider_phone,
+        service_type: row.provider_service_type,
+      } : null,
       items: itemsResult.rows as OrderItem[],
-    }
+    } as OrderWithItems
   }
 
   async updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {

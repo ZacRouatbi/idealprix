@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { orderService, OrderStatus } from '@/services/order-service'
+import { orderService } from '@/services/order-service'
 import { verifyTokenFromRequest } from '@/lib/auth-middleware'
 
 async function checkAuth(request: NextRequest) {
@@ -13,12 +13,12 @@ async function checkAuth(request: NextRequest) {
   return null
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const authError = await checkAuth(request)
   if (authError) return authError
 
-  const { id } = await params
   try {
+    const { id } = await context.params
     const order = await orderService.getOrder(id)
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -29,17 +29,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const authError = await checkAuth(request)
   if (authError) return authError
 
-  const { id } = await params
   try {
+    const { id } = await context.params
     const { status } = await request.json()
-    if (!['pending', 'processing', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
-    }
-    const order = await orderService.updateOrderStatus(id, status as OrderStatus)
+    const order = await orderService.updateOrderStatus(id, status)
     return NextResponse.json(order)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

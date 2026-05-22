@@ -92,13 +92,13 @@ export async function POST(request: NextRequest) {
 
       const orderResult = await client.query(
         `INSERT INTO orders (id, order_number, customer_email, customer_name, customer_phone,
-          shipping_address, billing_address, subtotal, shipping_amount, total_amount, status, notes)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+          shipping_address, billing_address, subtotal, shipping_amount, total_amount, status, notes, shipping_provider_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
         [
           uuidv4(), orderNumber, data.customerEmail, data.customerName || null, data.customerPhone || null,
           JSON.stringify(data.shippingAddress),
           data.billingAddress ? JSON.stringify(data.billingAddress) : JSON.stringify(data.shippingAddress),
-          calculatedSubtotal, shippingAmount, calculatedTotal, 'pending', data.notes || null,
+          calculatedSubtotal, shippingAmount, calculatedTotal, 'pending', data.notes || null, data.shippingProviderId || null,
         ]
       )
 

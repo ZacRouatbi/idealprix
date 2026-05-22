@@ -29,6 +29,7 @@ interface DataTableProps<TData, TValue> {
   onEdit?: (item: TData) => void
   onDelete?: (item: TData) => void
   getChildren?: (item: TData) => TData[]
+  onRowClick?: (item: TData) => void
 }
 
 function getChildContext<TData>(child: TData, col: any): any {
@@ -51,6 +52,7 @@ export function DataTable<TData = Category, TValue = any>({
   pageCount = 0,
   onDelete,
   getChildren,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -116,20 +118,21 @@ return (
                   const hasChildren = children.length > 0
                   const isExpanded = row.getIsExpanded()
 
-                return (
-                  <Fragment key={row.id}>
-                    <tr
-                      className="border-b transition-colors hover:bg-muted/50"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="p-4 align-middle">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      ))}
-                    </tr>
+return (
+                   <Fragment key={row.id}>
+                     <tr
+                       className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
+                       onClick={() => onRowClick?.(row.original)}
+                     >
+                       {row.getVisibleCells().map((cell) => (
+                         <td key={cell.id} className="p-4 align-middle">
+                           {flexRender(
+                             cell.column.columnDef.cell,
+                             cell.getContext()
+                           )}
+                         </td>
+                       ))}
+                     </tr>
 {hasChildren && isExpanded && (
                        <Fragment key={`children-${row.id}`}>
                          {children.map((child: any, index) => (
