@@ -1,63 +1,30 @@
-import { useState } from "react";
-import { User, Package, Mail, MapPin, Phone, Save } from "lucide-react";
-import { HttpTypes } from "@medusajs/types";
-import { useAuth } from "@lib/context/AuthContext";
-import OrdersSection from "@modules/account/components/OrdersSection";
+import { useState } from "react"
+import { User, Package, Mail, MapPin, Phone, Save } from "lucide-react"
+import { useAuth } from "@lib/context/AuthContext"
+import OrdersList, { BackendOrder } from "@modules/account/components/OrderCard"
+import { updateCustomer } from "@lib/data/backend-api"
 
 interface AccountTemplateProps {
-  customer?: HttpTypes.StoreCustomer | null;
-  orders?: HttpTypes.StoreOrder[] | null;
-  ordersLoading?: boolean;
+  customer?: {
+    first_name?: string | null
+    last_name?: string | null
+    email?: string | null
+    phone?: string | null
+  } | null
+  orders?: BackendOrder[]
 }
 
-export default function AccountTemplate({ customer, orders, ordersLoading }: AccountTemplateProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { token, setCustomer } = useAuth();
-
-  const PUBLISHABLE_KEY = import.meta.env.VITE_MEDUSA_PUBLISHABLE_KEY || "";
+export default function AccountTemplate({ customer, orders = [] }: AccountTemplateProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { token, setCustomer } = useAuth()
 
   const [formData, setFormData] = useState({
     first_name: customer?.first_name || "",
     last_name: customer?.last_name || "",
     phone: customer?.phone || "",
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/store/customers/me", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-publishable-api-key": PUBLISHABLE_KEY,
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setCustomer(data.customer);
-        setIsEditing(false);
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.message || "Échec de la mise à jour");
-      }
-    } catch (err) {
-      setError("Erreur de connexion au serveur");
-    } finally {
-      setLoading(false);
-    }
-  };
+  })
 
   const userInfo = customer
     ? {
@@ -65,7 +32,7 @@ export default function AccountTemplate({ customer, orders, ordersLoading }: Acc
         lastName: customer.last_name || "",
         email: customer.email || "",
         phone: customer.phone || "",
-        address: customer.addresses?.find((a) => a.is_default_billing)?.city || "",
+        address: "",
       }
     : {
         firstName: "",
@@ -73,25 +40,57 @@ export default function AccountTemplate({ customer, orders, ordersLoading }: Acc
         email: "",
         phone: "",
         address: "",
-      };
+      }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:3000/api"}/auth`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      )
+
+      if (res.ok) {
+        const data = await res.json()
+        setCustomer(data.user)
+        setIsEditing(false)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.message || "Échec de la mise à jour")
+      }
+    } catch {
+      setError("Erreur de connexion au serveur")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Mon compte</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* ===== SECTION 1 : INFORMATIONS PERSONNELLES ===== */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header */}
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-3">
               <User className="w-5 h-5 text-red-600" />
-              <h2 className="font-bold text-lg text-gray-900">
-                Informations personnelles
-              </h2>
+              <h2 className="font-bold text-lg text-gray-900">Informations personnelles</h2>
             </div>
 
-            {/* Content */}
             {!isEditing ? (
               <div className="p-6 space-y-4">
                 <div className="flex items-center gap-3">
@@ -134,9 +133,7 @@ export default function AccountTemplate({ customer, orders, ordersLoading }: Acc
               <form onSubmit={handleSave} className="p-6 space-y-4">
                 {error && <p className="text-red-500 text-xs">{error}</p>}
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Prénom
-                  </label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Prénom</label>
                   <input
                     type="text"
                     name="first_name"
@@ -146,9 +143,7 @@ export default function AccountTemplate({ customer, orders, ordersLoading }: Acc
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Nom
-                  </label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Nom</label>
                   <input
                     type="text"
                     name="last_name"
@@ -158,9 +153,7 @@ export default function AccountTemplate({ customer, orders, ordersLoading }: Acc
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
-                    Téléphone
-                  </label>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Téléphone</label>
                   <input
                     type="tel"
                     name="phone"
@@ -192,21 +185,19 @@ export default function AccountTemplate({ customer, orders, ordersLoading }: Acc
           </div>
         </div>
 
-        {/* ===== SECTION 2 : MES COMMANDES ===== */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header */}
             <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center gap-3">
               <Package className="w-5 h-5 text-red-600" />
               <h2 className="font-bold text-lg text-gray-900">Mes commandes</h2>
             </div>
 
             <div className="p-6">
-              <OrdersSection orders={orders ?? null} isLoading={ordersLoading} />
+              <OrdersList orders={orders} />
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

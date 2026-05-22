@@ -31,7 +31,6 @@ const updateCustomerName = async (
       return { success: false, error: String(error) }
     }
   }
-  }
 
   const [state, formAction] = useActionState(updateCustomerName, {
     error: null as string | null,

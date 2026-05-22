@@ -144,10 +144,10 @@ const result = await db.query(query, params)
     }
   }
 
-async getCustomerOrders(customerId: string, filters?: OrderFilters): Promise<PaginatedResponse<Order>> {
-    let query = 'SELECT * FROM orders WHERE customer_id = $1'
+  async getCustomerOrders(customerEmail: string, filters?: OrderFilters): Promise<PaginatedResponse<OrderWithItems>> {
+    let query = 'SELECT * FROM orders WHERE customer_email = $1'
     const conditions: string[] = []
-    const params: any[] = [customerId]
+    const params: any[] = [customerEmail]
     let paramIndex = 2
 
     if (filters?.status) {
@@ -167,16 +167,27 @@ async getCustomerOrders(customerId: string, filters?: OrderFilters): Promise<Pag
 
     const result = await db.query(query, params)
     
+    // Fetch items for each order
+    const ordersWithItems = await Promise.all(
+      result.rows.map(async (order) => {
+        const itemsResult = await db.query('SELECT * FROM order_items WHERE order_id = $1', [order.id])
+        return {
+          ...order as Order,
+          items: itemsResult.rows as OrderItem[],
+        } as OrderWithItems
+      })
+    )
+    
     // Build count query with correct parameters
     const countConditions = conditions.length > 0 ? ' AND ' + conditions.join(' AND ') : ''
     const countParams = params.slice(0, conditions.length + 1)
     const countResult = await db.query(
-       `SELECT COUNT(*) FROM orders WHERE customer_id = $1${countConditions}`,
+       `SELECT COUNT(*) FROM orders WHERE customer_email = $1${countConditions}`,
        countParams
      )
 
     return {
-      data: result.rows as Order[],
+      data: ordersWithItems,
       count: parseInt(countResult.rows[0].count),
       limit: filters?.limit || 50,
       offset: filters?.offset || 0,

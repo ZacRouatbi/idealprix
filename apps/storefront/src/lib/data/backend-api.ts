@@ -167,12 +167,25 @@ export async function fetchShippingProviders(): Promise<ShippingProvider[]> {
 }
 
 /* ─── Order Types ─── */
+export interface OrderItem {
+  id: string
+  order_id: string
+  product_name: string
+  product_sku?: string
+  quantity: number
+  unit_price: number
+  total_price: number
+  product_image?: string
+}
+
 export interface Order {
   id: string
   order_number: string
   status: 'pending' | 'processing' | 'paid' | 'shipped' | 'delivered' | 'cancelled'
   total_amount: number
+  subtotal?: number
   created_at: string
+  items?: OrderItem[]
 }
 
 export async function fetchOrders(token: string, params?: {

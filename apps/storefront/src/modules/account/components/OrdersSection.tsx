@@ -23,27 +23,35 @@ function adaptOrder(order: HttpTypes.StoreOrder): MedusaOrder {
     shipping_total: order.shipping_total ?? 0,
     tax_total: order.tax_total ?? 0,
     currency_code: order.currency_code,
-    created_at: order.created_at,
+    created_at: order.created_at instanceof Date ? order.created_at.toISOString() : order.created_at,
     items: (order.items ?? []).map((item) => ({
       id: item.id,
       title: item.product?.title ?? item.title ?? "Unknown",
       quantity: item.quantity,
       unit_price: item.unit_price,
-      thumbnail: item.product?.thumbnail ?? item.thumbnail,
+      thumbnail: item.product?.thumbnail ?? item.thumbnail ?? undefined,
       variant: item.variant
         ? {
             title: item.variant.title ?? "",
-            sku: item.variant.sku,
+            sku: item.variant.sku ?? undefined,
           }
         : undefined,
       product: item.product
         ? {
             title: item.product.title ?? "",
-            thumbnail: item.product.thumbnail,
+            thumbnail: item.product.thumbnail ?? undefined,
           }
         : undefined,
     })),
-    shipping_address: order.shipping_address,
+    shipping_address: order.shipping_address
+        ? {
+            first_name: order.shipping_address.first_name,
+            last_name: order.shipping_address.last_name,
+            address_1: order.shipping_address.address_1,
+            city: order.shipping_address.city,
+            country_code: order.shipping_address.country_code,
+          }
+        : undefined,
   };
 }
 

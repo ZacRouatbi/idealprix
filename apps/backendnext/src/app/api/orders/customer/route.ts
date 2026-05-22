@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { orderService, OrderStatus } from '@/services/order-service'
 import { verifyTokenFromRequest } from '@/lib/auth-middleware'
 
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173']
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173', 'http://localhost:5174']
 
 const getCorsHeaders = (request: NextRequest) => {
   const origin = request.headers.get('origin')
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const orders = await orderService.getCustomerOrders(user.id, filters)
+    const orders = await orderService.getCustomerOrders(user.email, filters)
     return NextResponse.json(orders, { headers: corsHeaders })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })

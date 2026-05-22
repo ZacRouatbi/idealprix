@@ -2,8 +2,6 @@
 
 import { Button } from "@modules/common/components/ui"
 
-import OrderCard from "../order-card"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
 
 const OrderOverview = ({ orders }: { orders: HttpTypes.StoreOrder[] }) => {
@@ -15,7 +13,17 @@ const OrderOverview = ({ orders }: { orders: HttpTypes.StoreOrder[] }) => {
             key={o.id}
             className="border-b border-gray-200 pb-6 last:pb-0 last:border-none"
           >
-            <OrderCard order={o} />
+            <div className="bg-white flex flex-col shadow-sm rounded-lg overflow-hidden" data-testid="order-card">
+              <div className="w-full text-left p-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className="uppercase text-sm font-semibold mb-1">#<span data-testid="order-display-id">{o.display_id}</span></div>
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
+                    <span data-testid="order-created-at">{new Date(o.created_at).toDateString()}</span>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-700">{o.payment_status}</div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -32,11 +40,11 @@ const OrderOverview = ({ orders }: { orders: HttpTypes.StoreOrder[] }) => {
         You don&apos;t have any orders yet, let us change that {":)"}
       </p>
       <div className="mt-4">
-        <LocalizedClientLink href="/" passHref>
+        <a href="/">
           <Button data-testid="continue-shopping-button">
             Continue shopping
           </Button>
-        </LocalizedClientLink>
+        </a>
       </div>
     </div>
   )
