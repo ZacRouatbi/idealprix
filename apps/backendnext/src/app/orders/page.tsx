@@ -40,7 +40,7 @@ export default function OrdersPage() {
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     try {
       const token = localStorage.getItem('token')
-      await fetch(`/api/orders/${orderId}`, {
+      const response = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -48,9 +48,13 @@ export default function OrdersPage() {
         },
         body: JSON.stringify({ status }),
       })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(error.error || `HTTP ${response.status}`)
+      }
       queryClient.invalidateQueries({ queryKey: ["orders"] })
-    } catch (err) {
-      alert("Failed to update status")
+    } catch (err: any) {
+      alert(`Failed to update status: ${err.message}`)
     }
   }
 

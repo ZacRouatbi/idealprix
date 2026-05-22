@@ -4,8 +4,13 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Order, OrderStatus } from "@/services/order-service"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem } from "@/components/ui/select"
-import { Mail } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronDown, Mail, Package, Truck, CheckCircle, XCircle } from "lucide-react"
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -16,7 +21,23 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800",
 }
 
-const statusOrder: OrderStatus[] = ["pending", "processing", "paid", "shipped", "delivered", "cancelled"]
+const statusIcons: Record<string, React.ReactNode> = {
+  pending: <Package className="h-4 w-4" />,
+  processing: <Package className="h-4 w-4" />,
+  paid: <CheckCircle className="h-4 w-4" />,
+  shipped: <Truck className="h-4 w-4" />,
+  delivered: <CheckCircle className="h-4 w-4" />,
+  cancelled: <XCircle className="h-4 w-4" />,
+}
+
+const nextStatusMap: Record<OrderStatus, OrderStatus[]> = {
+  pending: ["processing", "cancelled"],
+  processing: ["paid", "cancelled"],
+  paid: ["shipped", "cancelled"],
+  shipped: ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+}
 
 export const orderColumns = (
   onStatusChange?: (orderId: string, status: OrderStatus) => void,
@@ -45,18 +66,9 @@ export const orderColumns = (
     cell: ({ row }) => {
       const order = row.original
       return (
-        <Select
-          value={order.status}
-          onChange={(e) => onStatusChange?.(order.id, e.target.value as OrderStatus)}
-        >
-          <SelectContent>
-            {statusOrder.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Badge className={statusColors[order.status] || ""}>
+          {order.status}
+        </Badge>
       )
     },
   },
@@ -81,14 +93,42 @@ export const orderColumns = (
     header: "Actions",
     cell: ({ row }) => {
       const order = row.original
+      const nextStatuses = nextStatusMap[order.status] || []
+
       return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onSendEmail?.(order)}
-        >
-          <Mail className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {nextStatuses.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  {statusIcons[order.status]}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {nextStatuses.map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => onStatusChange?.(order.id, status)}
+                    className="cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      {statusIcons[status]}
+                      {status}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onSendEmail?.(order)}
+          >
+            <Mail className="h-4 w-4" />
+          </Button>
+        </div>
       )
     },
   },

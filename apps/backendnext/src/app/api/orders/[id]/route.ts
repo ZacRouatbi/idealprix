@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params
   try {
     const { status } = await request.json()
-    if (!['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+    if (!['pending', 'processing', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
     const order = await orderService.updateOrderStatus(id, status as OrderStatus)
