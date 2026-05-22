@@ -68,6 +68,8 @@ export default function OrdersPage() {
   }
 
   const handleSendEmail = async (order: Order) => {
+    if (!confirm(`Send confirmation email to ${order.customer_email}?`)) return
+    
     setEmailStatus(prev => ({ ...prev, [order.id]: "sending" }))
     try {
       const token = localStorage.getItem('token')
@@ -79,7 +81,9 @@ export default function OrdersPage() {
         },
       })
       if (response.ok) {
+        const result = await response.json()
         setEmailStatus(prev => ({ ...prev, [order.id]: "sent" }))
+        alert(result.message || "Email sent successfully!")
         setTimeout(() => {
           setEmailStatus(prev => ({ ...prev, [order.id]: "idle" }))
         }, 2000)
