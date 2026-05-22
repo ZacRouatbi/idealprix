@@ -45,15 +45,36 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     // Update order status
     const order = await orderService.updateOrderStatus(id, status)
     
-    // Release reserved inventory when order is shipped, delivered, or cancelled
-    if (oldStatus && ['pending', 'processing', 'paid'].includes(oldStatus) && 
-        ['shipped', 'delivered', 'cancelled'].includes(status)) {
+    // Deduct stock and release reservation when order is paid
+    if (oldStatus && oldStatus !== 'paid' && status === 'paid') {
       const items = await db.query('SELECT product_id, quantity FROM order_items WHERE order_id = $1', [id])
       for (const item of items.rows) {
+        await db.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2', [item.quantity, item.product_id])
         await db.query(
-          'UPDATE inventory SET reserved_quantity = GREATEST(0, reserved_quantity - $1) WHERE product_id = $2',
+          'UPDATE inventory SET quantity = quantity - $1, reserved_quantity = GREATEST(0, reserved_quantity - $1) WHERE product_id = $2',
           [item.quantity, item.product_id]
         )
+      }
+    }
+    
+    // Restore stock when order is cancelled (from pending/processing or paid)
+    if (oldStatus && status === 'cancelled' && !['cancelled'].includes(oldStatus)) {
+      const items = await db.query('SELECT product_id, quantity FROM order_items WHERE order_id = $1', [id])
+      for (const item of items.rows) {
+        if (oldStatus === 'paid') {
+          // Restore stock that was deducted
+          await db.query('UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2', [item.quantity, item.product_id])
+          await db.query(
+            'UPDATE inventory SET quantity = quantity + $1 WHERE product_id = $2',
+            [item.quantity, item.product_id]
+          )
+        } else {
+          // Release reservation only
+          await db.query(
+            'UPDATE inventory SET reserved_quantity = GREATEST(0, reserved_quantity - $1) WHERE product_id = $2',
+            [item.quantity, item.product_id]
+          )
+        }
       }
     }
     

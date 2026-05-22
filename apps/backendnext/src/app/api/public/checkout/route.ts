@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     const itemIds = data.items.map((item: any) => item.productId)
     const productCheck = await db.query(
-      'SELECT id, name, price, stock_quantity FROM products WHERE id = ANY($1) AND is_active = true',
+      'SELECT p.id, p.name, p.price, p.stock_quantity, i.quantity as inventory_quantity, i.reserved_quantity FROM products p LEFT JOIN inventory i ON p.id = i.product_id WHERE p.id = ANY($1) AND p.is_active = true',
       [itemIds]
     )
 
@@ -51,11 +51,14 @@ export async function POST(request: NextRequest) {
 
     for (const item of data.items) {
       const product = productCheck.rows.find((p: any) => p.id === item.productId)
-      if (product && product.stock_quantity < item.quantity) {
-        return addCorsHeaders(
-          NextResponse.json({ error: `Insufficient stock for ${product.name}. Available: ${product.stock_quantity}` }, { status: 400 }),
-          request
-        )
+      if (product) {
+        const available = (product.inventory_quantity || product.stock_quantity) - (product.reserved_quantity || 0)
+        if (available < item.quantity) {
+          return addCorsHeaders(
+            NextResponse.json({ error: `Insufficient stock for ${product.name}. Available: ${available}` }, { status: 400 }),
+            request
+          )
+        }
       }
     }
 
@@ -111,8 +114,7 @@ for (const item of data.items) {
            [uuidv4(), order.id, item.productId, item.productName, item.productSku || null,
             item.quantity, item.unitPrice, item.unitPrice * item.quantity, item.productImage || null]
          )
-         await client.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2', [item.quantity, item.productId])
-         // Reserve inventory
+         // Reserve inventory only - stock will be deducted when order is paid
          await client.query('UPDATE inventory SET reserved_quantity = reserved_quantity + $1 WHERE product_id = $2', [item.quantity, item.productId])
        }
 
