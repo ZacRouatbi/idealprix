@@ -59,7 +59,8 @@ export default function AccountDashboardPage() {
     status: order.status,
     total_amount: order.total_amount,
     subtotal: order.subtotal ?? 0,
-    shipping_amount: 0,
+    shipping_amount: order.shipping_amount,
+    shipping_address: order.shipping_address,
     created_at: order.created_at,
     items: order.items?.map((it) => ({
       id: it.id,

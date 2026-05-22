@@ -184,6 +184,15 @@ export interface Order {
   status: 'pending' | 'processing' | 'paid' | 'shipped' | 'delivered' | 'cancelled'
   total_amount: number
   subtotal?: number
+  shipping_amount?: number
+  shipping_address?: {
+    fullName: string
+    address: string
+    city: string
+    postalCode: string
+    countryCode: string
+    phone?: string
+  }
   created_at: string
   items?: OrderItem[]
 }
