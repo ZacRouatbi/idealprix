@@ -19,6 +19,7 @@ const pool = new Pool({
     await client.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP NULL;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
     `)
     console.log('✓ Added security columns to users table')
     

@@ -15,7 +15,7 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://loca
 const getCorsHeaders = (request: NextRequest) => {
   const origin = request.headers.get('origin')
   const headers: Record<string, string> = {
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-csrf-token',
     'Access-Control-Allow-Credentials': 'true',
   }
@@ -162,4 +162,41 @@ export async function DELETE(request: NextRequest) {
   const response = NextResponse.json({ success: true }, { headers: corsHeaders })
   response.cookies.delete('token')
   return response
+}
+
+export async function PUT(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request)
+  
+  const token = request.cookies.get('token')?.value ||
+    request.headers.get('authorization')?.split(' ')[1]
+
+  if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET_VALIDATED) as { userId: string }
+    const body = await request.json()
+    const { first_name, last_name, email, phone } = body
+
+    const result = await db.query(
+      `UPDATE users 
+       SET first_name = COALESCE($1, first_name),
+           last_name = COALESCE($2, last_name),
+           email = COALESCE($3, email),
+           phone = $4
+       WHERE id = $5
+       RETURNING id, email, first_name, last_name, phone, role`,
+      [first_name || null, last_name || null, email || null, phone || null, decoded.userId]
+    )
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404, headers: corsHeaders })
+    }
+
+    const { password_hash, ...user } = result.rows[0]
+    return NextResponse.json({ user }, { status: 200, headers: corsHeaders })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500, headers: corsHeaders })
+  }
 }

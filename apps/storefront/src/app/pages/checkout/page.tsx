@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCart } from "../../../lib/context/CartContext";
+import { useAuth } from "../../../lib/context/AuthContext";
 import { formatPrice } from "../../../lib/data/products";
 import { fetchShippingProviders, type ShippingProvider } from "../../../lib/data/backend-api";
 
@@ -71,6 +72,7 @@ async function checkoutFetch<T>(path: string, options: RequestInit = {}): Promis
 
 export default function CheckoutPage() {
   const { cart, subtotal, clearCart } = useCart();
+  const { customer, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState<Step>(1);
@@ -93,6 +95,19 @@ export default function CheckoutPage() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (customer && !authLoading) {
+      setAddress(prev => ({
+        ...prev,
+        fullName: customer.first_name && customer.last_name 
+          ? `${customer.first_name} ${customer.last_name}` 
+          : customer.first_name || prev.fullName,
+        phone: customer.phone || prev.phone,
+        email: customer.email || prev.email,
+      }));
+    }
+  }, [customer, authLoading]);
 
   const selectedProvider = shippingProviders.find(p => p.id === selectedProviderId);
   const shippingCost = selectedProvider?.price ?? 0;

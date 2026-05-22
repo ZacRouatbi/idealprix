@@ -3,7 +3,7 @@
  * Connects to the backendnext API endpoints
  */
 
-const API_BASE_URL = (import.meta as any).env?.VITE_BACKEND_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL = (import.meta as any).env?.VITE_BACKEND_API_URL
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -216,6 +216,7 @@ export interface User {
   email: string
   first_name: string
   last_name: string
+  phone?: string
   role: 'admin' | 'manager' | 'staff' | 'customer'
 }
 

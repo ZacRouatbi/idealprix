@@ -24,6 +24,7 @@ export default function AccountTemplate({ customer, orders = [] }: AccountTempla
     first_name: customer?.first_name || "",
     last_name: customer?.last_name || "",
     phone: customer?.phone || "",
+    email: customer?.email || "",
   })
 
   const userInfo = customer
@@ -158,6 +159,16 @@ export default function AccountTemplate({ customer, orders = [] }: AccountTempla
                     type="tel"
                     name="phone"
                     value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-600/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-600/30"
                   />
