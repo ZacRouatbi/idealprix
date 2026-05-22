@@ -104,15 +104,17 @@ export async function POST(request: NextRequest) {
 
       const order = orderResult.rows[0]
 
-      for (const item of data.items) {
-        await client.query(
-          `INSERT INTO order_items (id, order_id, product_id, product_name, product_sku,
-            quantity, unit_price, total_price, product_image) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [uuidv4(), order.id, item.productId, item.productName, item.productSku || null,
-           item.quantity, item.unitPrice, item.unitPrice * item.quantity, item.productImage || null]
-        )
-        await client.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2', [item.quantity, item.productId])
-      }
+for (const item of data.items) {
+         await client.query(
+           `INSERT INTO order_items (id, order_id, product_id, product_name, product_sku,
+             quantity, unit_price, total_price, product_image) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+           [uuidv4(), order.id, item.productId, item.productName, item.productSku || null,
+            item.quantity, item.unitPrice, item.unitPrice * item.quantity, item.productImage || null]
+         )
+         await client.query('UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2', [item.quantity, item.productId])
+         // Reserve inventory
+         await client.query('UPDATE inventory SET reserved_quantity = reserved_quantity + $1 WHERE product_id = $2', [item.quantity, item.productId])
+       }
 
       await client.query('COMMIT')
       return addCorsHeaders(NextResponse.json({ order: { id: order.id, order_number: order.order_number, status: order.status, total_amount: order.total_amount } }, { status: 201 }), request)
@@ -126,6 +128,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Checkout error:', error)
-    return addCorsHeaders(NextResponse.json({ error: 'Failed to create order' }, { status: 500 }), request)
+    const errorMessage = error?.message || error?.code || 'Failed to create order'
+    return addCorsHeaders(NextResponse.json({ error: errorMessage }, { status: 500 }), request)
   }
 }

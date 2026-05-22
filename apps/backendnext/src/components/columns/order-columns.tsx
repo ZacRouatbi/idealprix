@@ -97,34 +97,44 @@ export const orderColumns = (
 
       return (
         <div className="flex items-center gap-1">
-          {nextStatuses.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {statusIcons[order.status]}
-                  <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {nextStatuses.map((status) => (
-                  <DropdownMenuItem
-                    key={status}
-                    onClick={() => onStatusChange?.(order.id, status)}
-                    className="cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      {statusIcons[status]}
-                      {status}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+{nextStatuses.length > 0 && (
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button 
+                   variant="ghost" 
+                   size="sm"
+                   onClick={(e) => e.stopPropagation()}
+                 >
+                   {statusIcons[order.status]}
+                   <ChevronDown className="h-3 w-3 ml-1" />
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent align="end">
+                 {nextStatuses.map((status) => (
+                   <DropdownMenuItem
+                     key={status}
+                     onClick={(e) => {
+                       e.stopPropagation()
+                       onStatusChange?.(order.id, status)
+                     }}
+                     className="cursor-pointer"
+                   >
+                     <span className="flex items-center gap-2">
+                       {statusIcons[status]}
+                       {status}
+                     </span>
+                   </DropdownMenuItem>
+                 ))}
+               </DropdownMenuContent>
+             </DropdownMenu>
+           )}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onSendEmail?.(order)}
+            onClick={(e) => {
+              e.stopPropagation()
+              onSendEmail?.(order)
+            }}
           >
             <Mail className="h-4 w-4" />
           </Button>

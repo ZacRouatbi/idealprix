@@ -61,6 +61,7 @@ export default function OrdersPage() {
         throw new Error(error.error || `HTTP ${response.status}`)
       }
       queryClient.invalidateQueries({ queryKey: ["orders"] })
+      queryClient.invalidateQueries({ queryKey: ["inventory"] })
     } catch (err: any) {
       alert(`Failed to update status: ${err.message}`)
     }
@@ -179,6 +180,18 @@ export default function OrdersPage() {
                   </span>
                 </div>
               </div>
+              
+              {selectedOrder.notes && (
+                <div className="border-t pt-2">
+                  <div className="flex items-start gap-2">
+                    <Package className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <span className="text-sm font-medium">Notes:</span>
+                      <p className="text-sm text-muted-foreground mt-1">{selectedOrder.notes}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="border-t pt-2">
                 <div className="flex items-start gap-2">

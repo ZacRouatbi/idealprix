@@ -81,6 +81,13 @@ const pool = new Pool({
       ALTER TABLE categories ADD COLUMN IF NOT EXISTS updated_by UUID REFERENCES users(id);
     `)
     console.log('✓ Added audit columns to categories table')
+
+    // Add shipping_provider_id to orders
+    await client.query(`
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_provider_id UUID REFERENCES shipping_providers(id);
+      CREATE INDEX IF NOT EXISTS idx_orders_shipping_provider_id ON orders (shipping_provider_id);
+    `)
+    console.log('✓ Added shipping_provider_id to orders table')
     
     await client.query('COMMIT')
     console.log('\n✅ Migration applied successfully!')
