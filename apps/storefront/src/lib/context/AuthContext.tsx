@@ -13,18 +13,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => {
-    return localStorage.getItem("auth_token");
+    return localStorage.getItem("storefront_auth_token");
   });
   const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const setToken = (newToken: string | null) => {
     if (newToken) {
-      localStorage.setItem("auth_token", newToken);
+      localStorage.setItem("storefront_auth_token", newToken);
     } else {
-      localStorage.removeItem("auth_token");
+      localStorage.removeItem("storefront_auth_token");
     }
     setTokenState(newToken);
   };
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const checkAuth = async () => {
-    const storedToken = localStorage.getItem("auth_token");
+    const storedToken = localStorage.getItem("storefront_auth_token");
     if (!storedToken) {
       setToken(null);
       setCustomer(null);
