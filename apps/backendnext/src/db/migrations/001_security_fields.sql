@@ -44,3 +44,7 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_by UUID REFERENCES users(i
 -- Add created_by and updated_by to categories for audit trail
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id);
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS updated_by UUID REFERENCES users(id);
+
+-- Add promo_code and discount_amount to orders table
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount INTEGER DEFAULT 0;

@@ -6,18 +6,28 @@ export type CartItem = {
   quantity: number;
 };
 
+export type PromoCode = {
+  code: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  minOrderValue?: number;
+};
+
 type CartState = {
   items: CartItem[];
+  promoCode: PromoCode | null;
 };
 
 type CartAction =
+  | { type: "LOAD"; payload: CartItem[] }
   | { type: "ADD_ITEM"; payload: Product }
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR_CART" }
-  | { type: "LOAD"; payload: CartItem[] };
+  | { type: "SET_PROMO"; payload: PromoCode | null };
 
 const STORAGE_KEY = "sevra_cart";
+const PROMO_KEY = "sevra_cart_promo";
 
 function loadFromStorage(): CartItem[] {
   try {
@@ -34,10 +44,29 @@ function saveToStorage(items: CartItem[]) {
   } catch {}
 }
 
+function loadPromoFromStorage(): PromoCode | null {
+  try {
+    const raw = localStorage.getItem(PROMO_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePromoToStorage(promo: PromoCode | null) {
+  try {
+    if (promo) {
+      localStorage.setItem(PROMO_KEY, JSON.stringify(promo));
+    } else {
+      localStorage.removeItem(PROMO_KEY);
+    }
+  } catch {}
+}
+
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case "LOAD":
-      return { items: action.payload };
+      return { items: action.payload, promoCode: state.promoCode };
 
     case "ADD_ITEM": {
       const existing = state.items.find(
@@ -84,7 +113,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       };
 
     case "CLEAR_CART":
-      return { items: [] };
+      return { items: [], promoCode: null };
+
+    case "SET_PROMO":
+      return { ...state, promoCode: action.payload };
 
     default:
       return state;
@@ -97,27 +129,36 @@ type CartContextType = {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  applyPromo: (promo: PromoCode) => void;
+  removePromo: () => void;
   totalItems: number;
   subtotal: number;
+  total: number;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cart, dispatch] = useReducer(cartReducer, { items: [] });
+  const [cart, dispatch] = useReducer(cartReducer, { items: [], promoCode: null });
 
-  // Hydrate from localStorage on mount
   useEffect(() => {
     const saved = loadFromStorage();
+    const savedPromo = loadPromoFromStorage();
     if (saved.length > 0) {
       dispatch({ type: "LOAD", payload: saved });
     }
+    if (savedPromo) {
+      dispatch({ type: "SET_PROMO", payload: savedPromo });
+    }
   }, []);
 
-  // Persist to localStorage on every change
   useEffect(() => {
     saveToStorage(cart.items);
   }, [cart.items]);
+
+  useEffect(() => {
+    savePromoToStorage(cart.promoCode);
+  }, [cart.promoCode]);
 
   const addItem = (product: Product) =>
     dispatch({ type: "ADD_ITEM", payload: product });
@@ -126,6 +167,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const updateQuantity = (id: string, quantity: number) =>
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
   const clearCart = () => dispatch({ type: "CLEAR_CART" });
+  const applyPromo = (promo: PromoCode) =>
+    dispatch({ type: "SET_PROMO", payload: promo });
+  const removePromo = () => dispatch({ type: "SET_PROMO", payload: null });
 
   const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.items.reduce(
@@ -133,9 +177,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     0
   );
 
+  const discount = cart.promoCode
+    ? cart.promoCode.discountType === "percentage"
+      ? Math.floor(subtotal * cart.promoCode.discountValue / 100)
+      : cart.promoCode.discountValue
+    : 0;
+
+  const total = Math.max(0, subtotal - discount);
+
   return (
     <CartContext.Provider
-      value={{ cart, addItem, removeItem, updateQuantity, clearCart, totalItems, subtotal }}
+      value={{ cart, addItem, removeItem, updateQuantity, clearCart, applyPromo, removePromo, totalItems, subtotal, total }}
     >
       {children}
     </CartContext.Provider>

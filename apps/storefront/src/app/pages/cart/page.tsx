@@ -10,10 +10,15 @@ import {
 } from "lucide-react";
 import { useCart } from "../../../lib/context/CartContext";
 import { formatPrice } from "../../../lib/data/products";
+import { apiClient } from "../../../lib/data/backend-api";
+import React, { useState } from "react";
 
 export default function CartPage() {
-  const { cart, removeItem, updateQuantity, subtotal } = useCart();
+  const { cart, removeItem, updateQuantity, subtotal, total, applyPromo, removePromo } = useCart();
   const navigate = useNavigate();
+  const [promoCode, setPromoCode] = useState("");
+  const [promoMessage, setPromoMessage] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
 
   if (cart.items.length === 0) {
     return (
@@ -53,7 +58,6 @@ export default function CartPage() {
       style={{ fontFamily: "Inter, sans-serif" }}
     >
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm text-[#717182] mb-5">
           <Link to="/" className="hover:text-[#D4302A] transition-colors">
             Accueil
@@ -73,14 +77,12 @@ export default function CartPage() {
         </h1>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Cart Items */}
           <div className="flex-1 space-y-3">
             {cart.items.map(({ product, quantity }) => (
               <div
                 key={product.id}
                 className="bg-white rounded-xl border border-[#E5E5E5] p-4 flex items-start gap-4"
               >
-                {/* Image */}
                 <Link to={`/products/${product.handle}`} className="flex-shrink-0">
                   <div className="w-20 h-20 bg-[#F9F8F7] rounded-lg overflow-hidden border border-[#E5E5E5]">
                     <img
@@ -91,7 +93,6 @@ export default function CartPage() {
                   </div>
                 </Link>
 
-                {/* Details */}
                 <div className="flex-1 min-w-0">
                   <Link to={`/products/${product.handle}`}>
                     <p className="text-xs text-[#717182] mb-0.5">{product.brand}</p>
@@ -104,13 +105,10 @@ export default function CartPage() {
                   )}
 
                   <div className="flex items-center justify-between mt-3">
-                    {/* Quantity */}
                     <div className="flex items-center border border-[#E5E5E5] rounded-lg overflow-hidden">
                       <button
                         className="w-8 h-8 flex items-center justify-center hover:bg-[#F9F8F7] transition-colors"
-                        onClick={() =>
-                          updateQuantity(product.id, quantity - 1)
-                        }
+                        onClick={() => updateQuantity(product.id, quantity - 1)}
                       >
                         <Minus className="w-3 h-3" />
                       </button>
@@ -119,16 +117,13 @@ export default function CartPage() {
                       </span>
                       <button
                         className="w-8 h-8 flex items-center justify-center hover:bg-[#F9F8F7] transition-colors"
-                        onClick={() =>
-                          updateQuantity(product.id, quantity + 1)
-                        }
+                        onClick={() => updateQuantity(product.id, quantity + 1)}
                       >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {/* Price */}
                       <span
                         className="font-semibold text-[#1E1E1E] text-sm"
                         style={{ fontFamily: "Poppins, sans-serif" }}
@@ -136,7 +131,6 @@ export default function CartPage() {
                         {formatPrice(product.price * quantity)}
                       </span>
 
-                      {/* Delete */}
                       <button
                         className="text-[#717182] hover:text-[#D4302A] transition-colors p-1"
                         onClick={() => removeItem(product.id)}
@@ -150,7 +144,6 @@ export default function CartPage() {
               </div>
             ))}
 
-            {/* Continue Shopping */}
             <Link
               to="/products"
               className="inline-flex items-center gap-2 text-sm text-[#717182] hover:text-[#D4302A] transition-colors mt-2"
@@ -159,7 +152,6 @@ export default function CartPage() {
             </Link>
           </div>
 
-          {/* Order Summary */}
           <div className="lg:w-80 flex-shrink-0">
             <div className="bg-white rounded-xl border border-[#E5E5E5] p-5 sticky top-20">
               <h2
@@ -192,6 +184,16 @@ export default function CartPage() {
                     {formatPrice(subtotal)}
                   </span>
                 </div>
+                {cart.promoCode && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#717182]">
+                      Remise ({cart.promoCode.code})
+                    </span>
+                    <span className="font-medium text-red-600">
+                      -{formatPrice(subtotal - total)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-[#E5E5E5] mt-3 pt-3">
@@ -206,25 +208,79 @@ export default function CartPage() {
                     className="font-bold text-[#1E1E1E]"
                     style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.1rem" }}
                   >
-                    {formatPrice(subtotal)}
+                    {formatPrice(total)}
                   </span>
                 </div>
               </div>
 
-              {/* Promo code */}
               <div className="mt-4 flex gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#717182]" />
                   <input
                     type="text"
                     placeholder="Code promo"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                    disabled={isApplying}
                     className="w-full pl-8 pr-3 py-2.5 border border-[#E5E5E5] rounded-lg text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]"
                   />
                 </div>
-                <button className="px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#1E1E1E] hover:bg-[#F9F8F7] transition-colors">
+                <button
+                  onClick={async () => {
+                    if (!promoCode.trim()) return;
+                    if (cart.promoCode?.code === promoCode.trim()) {
+                      setPromoMessage("Promo code already applied");
+                      return;
+                    }
+                    setIsApplying(true);
+                    setPromoMessage("");
+
+                    try {
+                      const validation = await apiClient<{ valid: boolean; promoCode?: { code: string; discountType: "percentage" | "fixed"; discountValue: number; minOrderValue: number } }>(
+                        `/public/promo-codes/${encodeURIComponent(promoCode.trim())}`
+                      );
+
+                      if (validation.valid && validation.promoCode) {
+                        if (validation.promoCode.minOrderValue && subtotal < validation.promoCode.minOrderValue) {
+                          setPromoMessage(`Minimum order value: ${formatPrice(validation.promoCode.minOrderValue)}`);
+                          return;
+                        }
+                        applyPromo(validation.promoCode);
+                        setPromoMessage("Promo code applied!");
+                      } else {
+                        setPromoMessage("Invalid promo code");
+                      }
+                    } catch (e) {
+                      setPromoMessage("Failed to validate promo code");
+                    } finally {
+                      setIsApplying(false);
+                    }
+                  }}
+                  disabled={isApplying || !promoCode.trim()}
+                  className="px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#1E1E1E] hover:bg-[#F9F8F7] transition-colors disabled:opacity-50"
+                >
                   Appliquer
                 </button>
               </div>
+              {promoMessage && (
+                <p className={`text-xs mt-2 ${promoMessage.includes("Invalid") || promoMessage.includes("Failed") || promoMessage.includes("already") ? "text-red-500" : "text-green-600"}`}>
+                  {promoMessage}
+                </p>
+              )}
+              {cart.promoCode && (
+                <div className="mt-1 flex items-center justify-between">
+                  <p className="text-xs text-green-600">Applied: {cart.promoCode.code}</p>
+                  <button
+                    onClick={() => {
+                      removePromo();
+                      setPromoCode("");
+                    }}
+                    className="text-xs text-[#717182] hover:text-[#D4302A]"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
 
               <button
                 onClick={() => navigate("/checkout")}

@@ -323,6 +323,33 @@ export class PromotionService {
   async deletePromoCode(id: string): Promise<void> {
     await db.query('DELETE FROM promo_codes WHERE id = $1', [id])
   }
+
+  async getPromoCodeByCode(code: string): Promise<PromoCode | null> {
+    const now = new Date()
+    const nowISO = now.toISOString()
+    const result = await db.query(
+      `SELECT pc.id,
+              pc.code,
+              pc.discount_type AS "discountType",
+              pc.discount_value AS "discountValue",
+              pc.start_date AS "startDate",
+              pc.end_date AS "endDate",
+              pc.min_order_value AS "minOrderValue",
+              pc.usage_limit AS "usageLimit",
+              pc.used_count AS "usedCount",
+              pc.is_active AS "isActive",
+              pc.created_at AS "createdAt",
+              pc.updated_at AS "updatedAt"
+       FROM promo_codes pc
+       WHERE pc.code = $1
+         AND pc.is_active = true
+         AND pc.start_date <= $2
+         AND pc.end_date >= $3
+         AND (pc.usage_limit IS NULL OR pc.used_count < pc.usage_limit)`,
+      [code, nowISO, nowISO]
+    )
+    return result.rows[0] as PromoCode || null
+  }
 }
 
 export const promotionService = new PromotionService()

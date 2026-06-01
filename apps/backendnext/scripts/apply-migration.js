@@ -90,6 +90,13 @@ const pool = new Pool({
     `)
     console.log('✓ Added shipping_provider_id to orders table')
     
+    // Add promo_code and discount_amount to orders
+    await client.query(`
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code TEXT;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount INTEGER DEFAULT 0;
+    `)
+    console.log('✓ Added promo_code and discount_amount to orders table')
+    
     await client.query('COMMIT')
     console.log('\n✅ Migration applied successfully!')
   } catch (err) {

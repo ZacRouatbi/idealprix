@@ -36,12 +36,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ? `${order.billing_address.city}, Tunisie` 
       : undefined
 
+    const subtotal = `${Number(order.subtotal).toLocaleString("fr-TN")} TND`
+    const discount = order.discount_amount && order.discount_amount > 0
+      ? `${Number(order.discount_amount).toLocaleString("fr-TN")} TND`
+      : undefined
+    const promoCode = order.promo_code || undefined
+
     const success = await sendOrderConfirmationEmail({
       to: order.customer_email,
       customerName: order.customer_name || "",
       orderNumber: order.order_number,
       orderDate: new Date(order.created_at).toLocaleDateString("fr-TN"),
       total: `${Number(order.total_amount).toLocaleString("fr-TN")} TND`,
+      subtotal,
+      discount,
+      promoCode,
       shippingCost: order.shipping_amount > 0 
         ? `${Number(order.shipping_amount).toLocaleString("fr-TN")} TND` 
         : undefined,

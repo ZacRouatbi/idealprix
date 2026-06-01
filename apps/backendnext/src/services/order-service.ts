@@ -19,6 +19,8 @@ export interface Order {
     phone?: string
     service_type: 'standard' | 'express' | 'pickup'
   } | null
+  promo_code?: string
+  discount_amount?: number
   currency: string
   customer_email: string
   customer_name?: string

@@ -45,6 +45,18 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy backendnext API routes
+      '/api/public': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy OPTIONS requests for CORS preflight
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   test: {

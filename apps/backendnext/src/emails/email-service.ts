@@ -12,6 +12,9 @@ interface EmailParams {
   orderNumber: string
   orderDate: string
   total: string
+  subtotal?: string
+  discount?: string
+  promoCode?: string
   shippingCost?: string
   deliveryAddress: string
   deliveryMethod?: 'pickup' | 'shipping'
@@ -50,7 +53,7 @@ function getTransporter() {
 }
 
 function generateEmailHtml(params: EmailParams): string {
-  const { customerName, orderNumber, orderDate, total, shippingCost, deliveryAddress, deliveryMethod, billingAddress, trackingUrl = '#', items = [] } = params
+  const { customerName, orderNumber, orderDate, total, subtotal, discount, promoCode, shippingCost, deliveryAddress, deliveryMethod, billingAddress, trackingUrl = '#', items = [] } = params
   const brandName = process.env.BRAND_NAME || 'Ideal Prix'
   const supportPhone = process.env.SUPPORT_PHONE || ''
   const supportEmail = process.env.SUPPORT_EMAIL || ''
@@ -110,6 +113,18 @@ function generateEmailHtml(params: EmailParams): string {
                 <td style="padding: 15px 10px; color: #666; font-size: 16px;">${deliveryMethod === 'pickup' ? 'Retrait' : 'Livraison'}</td>
                 <td style="padding: 15px 10px; text-align: right; font-size: 16px; color: #111;">${displayAddress}</td>
               </tr>
+              ${subtotal ? `
+              <tr style="border-bottom: 1px solid #f4eeee;">
+                <td style="padding: 15px 10px; color: #666; font-size: 16px;">Sous-total</td>
+                <td style="padding: 15px 10px; text-align: right; font-size: 16px; color: #111;">${subtotal}</td>
+              </tr>
+              ` : ''}
+              ${discount && promoCode ? `
+              <tr style="border-bottom: 1px solid #f4eeee;">
+                <td style="padding: 15px 10px; color: #666; font-size: 16px;">Remise (${promoCode})</td>
+                <td style="padding: 15px 10px; text-align: right; font-size: 16px; color: #d4302a;">-${discount}</td>
+              </tr>
+              ` : ''}
               ${shippingCost ? `
               <tr style="border-bottom: 1px solid #f4eeee;">
                 <td style="padding: 15px 10px; color: #666; font-size: 16px;">Frais de livraison</td>

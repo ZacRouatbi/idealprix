@@ -1,14 +1,14 @@
 "use client"
-
-import { Badge, Heading, Input, Label, Text } from "@modules/common/components/ui"
+import { Badge, Heading, Input, Label, Text, Button } from "@modules/common/components/ui"
 import React from "react"
+import { useTransition } from "react"
 
+import { apiClient } from "@lib/data/backend-api"
 import { applyPromotions } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import Trash from "@modules/common/icons/trash"
 import ErrorMessage from "../error-message"
-import { SubmitButton } from "../submit-button"
 
 type DiscountCodeProps = {
   cart: HttpTypes.StoreCart
@@ -17,8 +17,10 @@ type DiscountCodeProps = {
 const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState("")
-
+  const [isPending, startTransition] = useTransition()
+  
   const { promotions = [] } = cart
+
   const removePromotionCode = async (code: string) => {
     const validPromotions = promotions.filter(
       (promotion) => promotion.code !== code
@@ -29,34 +31,43 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
     )
   }
 
-  const addPromotionCode = async (formData: FormData) => {
-    setErrorMessage("")
+  const handleApplyPromo = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const code = formData.get("code") as string
+    
+    if (!code) return
 
-    const code = formData.get("code")
-    if (!code) {
-      return
-    }
-    const input = document.getElementById("promotion-input") as HTMLInputElement
-    const codes = promotions
-      .filter((p) => p.code !== undefined)
-      .map((p) => p.code!)
-    codes.push(code.toString())
+    startTransition(async () => {
+      setErrorMessage("")
+      
+      try {
+        const validation = await apiClient<{ valid: boolean }>(
+          `/public/promo-codes/${encodeURIComponent(code)}`
+        )
+        
+        if (!validation.valid) {
+          setErrorMessage("Invalid or expired promo code")
+          return
+        }
 
-    try {
-      await applyPromotions(codes)
-    } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : String(e))
-    }
+        const codes = promotions
+          .filter((p) => p.code !== undefined)
+          .map((p) => p.code!)
+        codes.push(code)
 
-    if (input) {
-      input.value = ""
-    }
+        await applyPromotions(codes)
+        e.currentTarget.reset()
+      } catch (e) {
+        setErrorMessage(e instanceof Error ? e.message : "Failed to apply promo code")
+      }
+    })
   }
 
   return (
     <div className="w-full bg-white flex flex-col">
       <div className="txt-medium">
-        <form action={(a) => addPromotionCode(a)} className="w-full mb-5">
+        <form onSubmit={handleApplyPromo} className="w-full mb-5">
           <Label className="flex gap-x-1 my-2 items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -81,14 +92,17 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                   name="code"
                   type="text"
                   autoFocus={false}
+                  disabled={isPending}
                   data-testid="discount-input"
                 />
-                <SubmitButton
-                  variant="secondary"
-                  data-testid="discount-apply-button"
-                >
-                  Apply
-                </SubmitButton>
+<Button
+                   variant="secondary"
+                   isLoading={isPending}
+                   data-testid="discount-apply-button"
+                   type="submit"
+                 >
+                   Apply
+                 </Button>
               </div>
 
               <ErrorMessage

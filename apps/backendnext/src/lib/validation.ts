@@ -128,6 +128,9 @@ export interface CreateOrderInput {
     phone?: string
   }
   subtotal: number
+  total: number
+  discount?: number
+  promoCode?: string
   shippingAmount?: number
   shippingProviderId?: string
   notes?: string
@@ -158,11 +161,15 @@ export function validateCreateOrderInput(data: any): { valid: boolean; error?: s
     }
   }
 
-  if (typeof data.subtotal !== 'number' || data.subtotal < 0) {
-    return { valid: false, error: 'Invalid subtotal amount' }
-  }
+if (typeof data.subtotal !== 'number' || data.subtotal < 0) {
+      return { valid: false, error: 'Invalid subtotal amount' }
+    }
 
-  // Validate items
+    if (typeof data.total !== 'number' || data.total < 0) {
+      return { valid: false, error: 'Invalid total amount' }
+    }
+
+    // Validate items
   for (const item of data.items) {
     if (!item.productId || !item.quantity || !item.unitPrice) {
       return { valid: false, error: 'Each order item must have productId, quantity, and unitPrice' }

@@ -44,6 +44,8 @@ async function apiClient<T>(endpoint: string, options: ApiOptions = {}): Promise
   return response.json()
 }
 
+export { apiClient }
+
 /* ─── Product Types ─── */
 export interface Product {
   id: string

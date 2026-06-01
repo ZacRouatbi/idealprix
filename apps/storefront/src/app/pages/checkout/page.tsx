@@ -71,7 +71,7 @@ async function checkoutFetch<T>(path: string, options: RequestInit = {}): Promis
 }
 
 export default function CheckoutPage() {
-  const { cart, subtotal, clearCart } = useCart();
+  const { cart, subtotal, total: discountedTotal, clearCart } = useCart();
   const { customer, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -111,7 +111,7 @@ export default function CheckoutPage() {
 
   const selectedProvider = shippingProviders.find(p => p.id === selectedProviderId);
   const shippingCost = selectedProvider?.price ?? 0;
-  const total = subtotal + shippingCost;
+  const total = discountedTotal + shippingCost;
 
   const steps = [
     { n: 1, label: "Address" },
@@ -165,6 +165,9 @@ export default function CheckoutPage() {
           phone: address.phone,
         },
         subtotal: subtotal,
+        discount: subtotal - discountedTotal,
+        total: discountedTotal,
+        promoCode: cart.promoCode?.code || null,
         shippingProviderId: selectedProviderId,
         notes: address.notes || undefined,
       };
@@ -597,6 +600,16 @@ export default function CheckoutPage() {
                   <span className="text-[#717182]">Subtotal</span>
                   <span className="font-medium text-[#1E1E1E]">{formatPrice(subtotal)}</span>
                 </div>
+                {cart.promoCode && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#717182]">
+                      Discount ({cart.promoCode.code})
+                    </span>
+                    <span className="font-medium text-red-600">
+                      -{formatPrice(subtotal - discountedTotal)}
+                    </span>
+                  </div>
+                )}
                 {selectedProvider && (
                   <div className="flex justify-between text-sm">
                     <span className="text-[#717182]">{selectedProvider.name}</span>

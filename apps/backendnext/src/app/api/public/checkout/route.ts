@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { validateCreateOrderInput } from '@/lib/validation'
 import { rateLimit } from '@/lib/validation'
 import { shippingService } from '@/services/shipping-service'
+import { promotionService } from '@/services/promotion-service'
 
 const publicRateLimit = rateLimit({
   windowMs: 60000,
@@ -64,6 +65,21 @@ export async function POST(request: NextRequest) {
 
     const calculatedSubtotal = data.items.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0)
     
+    // Validate promo code if provided
+    let discount = 0
+    if (data.promoCode) {
+      const promo = await promotionService.getPromoCodeByCode(data.promoCode)
+      if (!promo) {
+        return addCorsHeaders(NextResponse.json({ error: 'Invalid or expired promo code' }, { status: 400 }), request)
+      }
+      if (promo.minOrderValue && calculatedSubtotal < promo.minOrderValue) {
+        return addCorsHeaders(NextResponse.json({ error: `Minimum order value for this promo is ${promo.minOrderValue}` }, { status: 400 }), request)
+      }
+      discount = promo.discountType === 'percentage' 
+        ? Math.floor(calculatedSubtotal * promo.discountValue / 100)
+        : promo.discountValue
+    }
+    
     // Validate shipping - either use provider ID or validate shipping amount matches a valid provider
     let shippingAmount = 0
     if (data.shippingProviderId) {
@@ -81,10 +97,14 @@ export async function POST(request: NextRequest) {
       shippingAmount = data.shippingAmount
     }
     
-    const calculatedTotal = calculatedSubtotal + shippingAmount
+    const calculatedTotal = calculatedSubtotal - discount + shippingAmount
 
     if (Math.abs(calculatedSubtotal - data.subtotal) > 0.01) {
       return addCorsHeaders(NextResponse.json({ error: 'Subtotal mismatch' }, { status: 400 }), request)
+    }
+    
+    if (Math.abs(discount - (data.subtotal - data.total)) > 0.01) {
+      return addCorsHeaders(NextResponse.json({ error: 'Total mismatch - please recalculate' }, { status: 400 }), request)
     }
 
     const orderNumber = `ORD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
@@ -95,13 +115,14 @@ export async function POST(request: NextRequest) {
 
       const orderResult = await client.query(
         `INSERT INTO orders (id, order_number, customer_email, customer_name, customer_phone,
-          shipping_address, billing_address, subtotal, shipping_amount, total_amount, status, notes, shipping_provider_id)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+          shipping_address, billing_address, subtotal, shipping_amount, total_amount, status, notes, shipping_provider_id, promo_code, discount_amount)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
         [
           uuidv4(), orderNumber, data.customerEmail, data.customerName || null, data.customerPhone || null,
           JSON.stringify(data.shippingAddress),
           data.billingAddress ? JSON.stringify(data.billingAddress) : JSON.stringify(data.shippingAddress),
           calculatedSubtotal, shippingAmount, calculatedTotal, 'pending', data.notes || null, data.shippingProviderId || null,
+          data.promoCode || null, discount,
         ]
       )
 
