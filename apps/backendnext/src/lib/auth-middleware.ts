@@ -10,8 +10,16 @@ if (!JWT_SECRET) {
 const JWT_SECRET_VALIDATED = JWT_SECRET as string
 
 export async function verifyTokenFromRequest(request: NextRequest) {
-  const token = request.cookies.get('token')?.value ||
-    request.headers.get('authorization')?.split(' ')[1]
+  const authHeader = request.headers.get('authorization')
+  let token: string | undefined
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7)
+  }
+
+  if (!token) {
+    token = request.cookies.get('token')?.value
+  }
 
   if (!token) {
     return null

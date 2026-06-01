@@ -21,7 +21,6 @@ async function apiClient<T>(endpoint: string, options: ApiOptions = {}): Promise
       'Content-Type': 'application/json',
       ...headers,
     },
-    credentials: 'include',
   }
 
   if (token) {

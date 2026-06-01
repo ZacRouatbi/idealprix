@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { registerSchema } from '@/lib/schemas/auth-schemas'
 import { authService } from '@/services/auth-service'
 
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173']
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173', 'http://localhost:3000']
 
 const getCorsHeaders = (request: NextRequest) => {
   const origin = request.headers.get('origin')

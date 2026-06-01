@@ -7,22 +7,34 @@ const publicRateLimit = rateLimit({
   maxRequests: 120,
 })
 
-function addCorsHeaders(response: NextResponse, request: NextRequest) {
-  const origin = request.headers.get('origin') || '*'
-  response.headers.set('Access-Control-Allow-Origin', origin)
-  response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  response.headers.set('Access-Control-Allow-Credentials', 'true')
-  return response
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173', 'http://localhost:3000']
+
+const getCorsHeaders = (request: NextRequest) => {
+  const origin = request.headers.get('origin')
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+  }
+  
+  if (origin && ALLOWED_ORIGINS.some(allowed => allowed === origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+  }
+  
+  return headers
 }
 
 export async function OPTIONS(request: NextRequest) {
-  return addCorsHeaders(new NextResponse(null, { status: 200 }), request)
+  const headers = getCorsHeaders(request)
+  return new NextResponse(null, { status: 200, headers })
 }
 
 export async function GET(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request)
   const rateLimitResponse = await publicRateLimit(request)
-  if (rateLimitResponse) return addCorsHeaders(rateLimitResponse, request)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
 
   try {
     const now = new Date()
@@ -41,7 +53,7 @@ export async function GET(request: NextRequest) {
       return start <= nowISO && end >= nowISO
     })
 
-    return addCorsHeaders(NextResponse.json({
+    return NextResponse.json({
       data: activePromotions.map(p => ({
         id: p.id,
         targetType: p.targetType,
@@ -56,8 +68,8 @@ export async function GET(request: NextRequest) {
       offset: 0,
       page: 1,
       totalPages: 1,
-    }), request)
+    }, { headers: corsHeaders })
   } catch (error: any) {
-    return addCorsHeaders(NextResponse.json({ error: error.message }, { status: 500 }), request)
+    return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })
   }
 }

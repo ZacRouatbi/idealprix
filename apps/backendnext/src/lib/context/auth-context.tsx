@@ -30,39 +30,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    if (storedToken) {
-      setToken(storedToken)
-      try {
-        const payload = JSON.parse(atob(storedToken.split('.')[1]))
-        const decodedUser: User = {
-          id: payload.userId,
-          email: payload.email,
-          first_name: payload.email.split('@')[0],
-          last_name: '',
-          role: payload.role,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        }
-        setUser(decodedUser)
-        
-        // Validate token with API in background
-        fetch('/api/auth', {
-          headers: { Authorization: `Bearer ${storedToken}` }
-        }).then(res => res.json()).then(data => {
-          if (!data.user) {
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('token')
+      if (storedToken) {
+        setToken(storedToken)
+        try {
+          const payload = JSON.parse(atob(storedToken.split('.')[1]))
+          const decodedUser: User = {
+            id: payload.userId,
+            email: payload.email,
+            first_name: payload.email.split('@')[0],
+            last_name: '',
+            role: payload.role,
+            is_active: true,
+            created_at: new Date().toISOString(),
+          }
+          setUser(decodedUser)
+
+          try {
+            const res = await fetch('/api/auth', {
+              headers: { Authorization: `Bearer ${storedToken}` }
+            })
+            const data = await res.json()
+            if (!data.user) {
+              setUser(null)
+              setToken(null)
+              localStorage.removeItem('token')
+            }
+          } catch {
             setUser(null)
             setToken(null)
             localStorage.removeItem('token')
           }
-        }).catch(() => {})
-      } catch {
-        setUser(null)
-        setToken(null)
-        localStorage.removeItem('token')
+        } catch {
+          setUser(null)
+          setToken(null)
+          localStorage.removeItem('token')
+        }
       }
+      setIsLoading(false)
     }
-    setIsLoading(false)
+    initAuth()
   }, [])
 
   const login = async (email: string, password: string) => {

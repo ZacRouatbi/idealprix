@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60,
     })
 
@@ -131,8 +132,16 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const corsHeaders = getCorsHeaders(request)
   
-  const token = request.cookies.get('token')?.value ||
-    request.headers.get('authorization')?.split(' ')[1]
+  const authHeader = request.headers.get('authorization')
+  let token: string | undefined
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7)
+  }
+  
+  if (!token) {
+    token = request.cookies.get('token')?.value
+  }
 
   if (!token) {
     return NextResponse.json({ user: null }, { status: 200, headers: corsHeaders })
@@ -167,8 +176,16 @@ export async function DELETE(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   const corsHeaders = getCorsHeaders(request)
   
-  const token = request.cookies.get('token')?.value ||
-    request.headers.get('authorization')?.split(' ')[1]
+  const authHeader = request.headers.get('authorization')
+  let token: string | undefined
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7)
+  }
+  
+  if (!token) {
+    token = request.cookies.get('token')?.value
+  }
 
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })

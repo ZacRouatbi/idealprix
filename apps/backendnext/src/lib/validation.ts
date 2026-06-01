@@ -12,6 +12,23 @@ export interface RateLimitConfig {
   maxRequests: number
 }
 
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173', 'http://localhost:3000']
+
+const getCorsHeaders = (request: NextRequest): Record<string, string> => {
+  const origin = request.headers.get('origin')
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+  }
+  
+  if (origin && ALLOWED_ORIGINS.some(allowed => allowed === origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+  }
+  
+  return headers
+}
+
 export function rateLimit(config: RateLimitConfig) {
   return async (request: NextRequest) => {
     const ip = request.headers.get('x-forwarded-for') || 
@@ -32,9 +49,10 @@ export function rateLimit(config: RateLimitConfig) {
     }
     
     if (entry.count >= config.maxRequests) {
+      const corsHeaders = getCorsHeaders(request)
       return NextResponse.json(
         { error: 'Too many requests', retryAfter: Math.ceil((entry.resetTime - now) / 1000) },
-        { status: 429 }
+        { status: 429, headers: corsHeaders }
       )
     }
     

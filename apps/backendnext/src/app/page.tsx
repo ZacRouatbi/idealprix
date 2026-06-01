@@ -6,8 +6,26 @@ import { productService } from "@/services/product-service"
 import { auditService } from "@/services/audit-service"
 import { RecentOrders } from "@/components/recent-orders"
 import { RecentActivity } from "@/components/recent-activity"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 export const dynamic = 'force-dynamic'
+
+async function verifyAuth(): Promise<boolean> {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('token')?.value
+  if (!token) return false
+  
+  try {
+    const jwt = require('jsonwebtoken')
+    const JWT_SECRET = process.env.JWT_SECRET
+    if (!JWT_SECRET) return false
+    jwt.verify(token, JWT_SECRET)
+    return true
+  } catch {
+    return false
+  }
+}
 
 async function getDashboardData() {
   try {
@@ -38,6 +56,12 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
+  const isAuthenticated = await verifyAuth()
+
+  if (!isAuthenticated) {
+    redirect('/login')
+  }
+
   const data = await getDashboardData()
 
   return (

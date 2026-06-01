@@ -8,22 +8,34 @@ const publicRateLimit = rateLimit({
   maxRequests: 120,
 })
 
-function addCorsHeaders(response: NextResponse, request: NextRequest) {
-  const origin = request.headers.get('origin') || '*'
-  response.headers.set('Access-Control-Allow-Origin', origin)
-  response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  response.headers.set('Access-Control-Allow-Credentials', 'true')
-  return response
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001', 'http://localhost:5173', 'http://localhost:3000']
+
+const getCorsHeaders = (request: NextRequest) => {
+  const origin = request.headers.get('origin')
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+  }
+  
+  if (origin && ALLOWED_ORIGINS.some(allowed => allowed === origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+  }
+  
+  return headers
 }
 
 export async function OPTIONS(request: NextRequest) {
-  return addCorsHeaders(new NextResponse(null, { status: 200 }), request)
+  const headers = getCorsHeaders(request)
+  return new NextResponse(null, { status: 200, headers })
 }
 
 export async function GET(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request)
   const rateLimitResponse = await publicRateLimit(request)
-  if (rateLimitResponse) return addCorsHeaders(rateLimitResponse, request)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
 
   const searchParams = request.nextUrl.searchParams
   const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '100')), 200)
@@ -48,21 +60,22 @@ export async function GET(request: NextRequest) {
       offset: result.offset
     })
     
-    return addCorsHeaders(NextResponse.json(
+    return NextResponse.json(
       {
         ...result,
         links: paginationLinks,
       },
       {
         headers: {
+          ...corsHeaders,
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
           'X-Total-Count': result.count.toString(),
           'X-Page': result.page.toString(),
           'X-Total-Pages': result.totalPages.toString(),
         },
       }
-    ), request)
+    )
   } catch (error: any) {
-    return addCorsHeaders(NextResponse.json({ error: error.message }, { status: 500 }), request)
+    return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })
   }
 }
