@@ -9,10 +9,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RefreshCw, Download } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
+import { useState, useEffect } from "react"
 
-async function getInventory() {
+const PAGE_SIZE = 10
+
+async function fetchInventory(page: number, limit: number) {
   const token = localStorage.getItem('token')
-  const response = await fetch("/api/inventory?limit=100", {
+  const response = await fetch(`/api/inventory?limit=${limit}&offset=${page * limit}`, {
     headers: { 
       'Authorization': `Bearer ${token}`,
     }
@@ -23,11 +26,23 @@ async function getInventory() {
 
 export default function InventoryPage() {
   const queryClient = useQueryClient()
+  const [page, setPage] = useState(0)
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["inventory"],
-    queryFn: getInventory,
+    queryKey: ["inventory", page],
+    queryFn: () => fetchInventory(page, PAGE_SIZE),
   })
+
+  // Smart pagination: preload next page
+  useEffect(() => {
+    if (data && data.totalPages && page < data.totalPages - 1) {
+      queryClient.prefetchQuery({
+        queryKey: ["inventory", page + 1],
+        queryFn: () => fetchInventory(page + 1, PAGE_SIZE),
+        staleTime: 5 * 60 * 1000,
+      })
+    }
+  }, [data, page, queryClient])
 
   const handleDelete = async (item: any) => {
     if (!confirm("Are you sure you want to delete this inventory item?")) return
@@ -76,8 +91,7 @@ export default function InventoryPage() {
   }
 
   const inventoryData = data?.data || []
-  const totalCount = data?.count || 0
-  const totalPages = Math.ceil(totalCount / 100) || 1
+  const totalPages = data?.totalPages || 1
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -103,6 +117,8 @@ export default function InventoryPage() {
         columns={inventoryColumns(undefined, handleDelete)} 
         data={inventoryData}
         pageCount={totalPages}
+        currentPage={page}
+        onPageChange={setPage}
       />
     </div>
   )

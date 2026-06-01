@@ -10,7 +10,7 @@ import { RefreshCw, Download, Mail, Truck, MapPin, User, Package } from "lucide-
 import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
 import { Order, OrderWithItems, OrderStatus } from "@/services/order-service"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -18,13 +18,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-async function getOrders() {
+const PAGE_SIZE = 10
+
+async function fetchOrders(page: number, limit: number) {
   const token = localStorage.getItem('token')
   const headers: HeadersInit = {}
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
-  const response = await fetch("/api/orders?limit=100", {
+  const offset = page * limit
+  const response = await fetch(`/api/orders?limit=${limit}&offset=${offset}`, {
     headers,
   })
   if (!response.ok) throw new Error("Failed to fetch orders")
@@ -33,10 +36,23 @@ async function getOrders() {
 
 export default function OrdersPage() {
   const queryClient = useQueryClient()
+  const [page, setPage] = useState(0)
+  
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["orders"],
-    queryFn: getOrders,
+    queryKey: ["orders", page],
+    queryFn: () => fetchOrders(page, PAGE_SIZE),
   })
+
+  // Smart pagination: preload next page
+  useEffect(() => {
+    if (data && data.totalPages && page < data.totalPages - 1) {
+      queryClient.prefetchQuery({
+        queryKey: ["orders", page + 1],
+        queryFn: () => fetchOrders(page + 1, PAGE_SIZE),
+        staleTime: 5 * 60 * 1000,
+      })
+    }
+  }, [data, page, queryClient])
 
   const [emailStatus, setEmailStatus] = useState<Record<string, "idle" | "sending" | "sent" | "error">>({})
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
@@ -105,7 +121,6 @@ export default function OrdersPage() {
   }
 
   const handleRowClick = async (order: OrderWithItems) => {
-    // Fetch full order details including items
     try {
       const token = localStorage.getItem('token')
       const headers: HeadersInit = {}
@@ -152,6 +167,8 @@ export default function OrdersPage() {
     )
   }
 
+  const totalPages = data?.totalPages || 1
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -176,6 +193,9 @@ export default function OrdersPage() {
             columns={orderColumns(handleStatusChange, handleSendEmail)} 
             data={data?.data || []}
             onRowClick={handleRowClick}
+            pageCount={totalPages}
+            currentPage={page}
+            onPageChange={setPage}
           />
       
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -222,69 +242,69 @@ export default function OrdersPage() {
                )}
                
 <div className="border-t pt-2">
-                  <div className="flex justify-between items-center">
-                    {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.subtotal && (
-                      <>
-                        <span className="text-sm font-medium">Subtotal:</span>
-                        <span className="text-sm">{Number(selectedOrder.subtotal).toLocaleString("fr-TN")} TND</span>
-                      </>
-                    )}
-                  </div>
-                  {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.promo_code && (
-                    <div className="flex justify-between items-center text-red-600">
-                      <span className="text-sm font-medium">Discount ({selectedOrder.promo_code}):</span>
-                      <span className="text-sm">-{Number(selectedOrder.discount_amount).toLocaleString("fr-TN")} TND</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Total:</span>
-                    <span className="text-lg font-bold">
-                      {selectedOrder.total_amount.toLocaleString("fr-TN")} TND
-                    </span>
-                  </div>
-                </div>
-              
-              {selectedOrder.notes && (
-                <div className="border-t pt-2">
-                  <div className="flex items-start gap-2">
-                    <Package className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <span className="text-sm font-medium">Notes:</span>
-                      <p className="text-sm text-muted-foreground mt-1">{selectedOrder.notes}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="border-t pt-2">
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <span className="text-sm font-medium">Shipping Address:</span>
-                    {selectedOrder.shipping_address && (
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {selectedOrder.shipping_address.fullName && <div>{selectedOrder.shipping_address.fullName}</div>}
-                        {selectedOrder.shipping_address?.address && <div>{selectedOrder.shipping_address.address}</div>}
-                        {selectedOrder.shipping_address?.city && (
-                          <div>
-                            {selectedOrder.shipping_address.city} {selectedOrder.shipping_address.postalCode}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="border-t pt-2">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Email:</span>
-                  <span className="text-sm">{selectedOrder.customer_email}</span>
-                </div>
-              </div>
-            </div>
-          )}
+                   <div className="flex justify-between items-center">
+                     {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.subtotal && (
+                       <>
+                         <span className="text-sm font-medium">Subtotal:</span>
+                         <span className="text-sm">{Number(selectedOrder.subtotal).toLocaleString("fr-TN")} TND</span>
+                       </>
+                     )}
+                   </div>
+                   {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.promo_code && (
+                     <div className="flex justify-between items-center text-red-600">
+                       <span className="text-sm font-medium">Discount ({selectedOrder.promo_code}):</span>
+                       <span className="text-sm">-{Number(selectedOrder.discount_amount).toLocaleString("fr-TN")} TND</span>
+                     </div>
+                   )}
+                   <div className="flex justify-between items-center">
+                     <span className="text-sm font-medium">Total:</span>
+                     <span className="text-lg font-bold">
+                       {selectedOrder.total_amount.toLocaleString("fr-TN")} TND
+                     </span>
+                   </div>
+                 </div>
+               
+               {selectedOrder.notes && (
+                 <div className="border-t pt-2">
+                   <div className="flex items-start gap-2">
+                     <Package className="h-4 w-4 text-muted-foreground mt-0.5" />
+                     <div>
+                       <span className="text-sm font-medium">Notes:</span>
+                       <p className="text-sm text-muted-foreground mt-1">{selectedOrder.notes}</p>
+                     </div>
+                   </div>
+                 </div>
+               )}
+               
+               <div className="border-t pt-2">
+                 <div className="flex items-start gap-2">
+                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                   <div>
+                     <span className="text-sm font-medium">Shipping Address:</span>
+                     {selectedOrder.shipping_address && (
+                       <div className="text-sm text-muted-foreground mt-1">
+                         {selectedOrder.shipping_address.fullName && <div>{selectedOrder.shipping_address.fullName}</div>}
+                         {selectedOrder.shipping_address?.address && <div>{selectedOrder.shipping_address.address}</div>}
+                         {selectedOrder.shipping_address?.city && (
+                           <div>
+                             {selectedOrder.shipping_address.city} {selectedOrder.shipping_address.postalCode}
+                           </div>
+                         )}
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               </div>
+               
+               <div className="border-t pt-2">
+                 <div className="flex items-center gap-2">
+                   <User className="h-4 w-4 text-muted-foreground" />
+                   <span className="text-sm font-medium">Email:</span>
+                   <span className="text-sm">{selectedOrder.customer_email}</span>
+                 </div>
+               </div>
+             </div>
+           )}
         </DialogContent>
       </Dialog>
     </div>

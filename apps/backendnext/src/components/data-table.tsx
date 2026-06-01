@@ -10,15 +10,11 @@ import {
   getSortedRowModel,
   ColumnFiltersState,
   getFilteredRowModel,
-  PaginationState,
-  getPaginationRowModel,
   ExpandedState,
 } from "@tanstack/react-table"
-import { useState } from "react"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { Category } from "@/services/category-service"
 
 interface DataTableProps<TData, TValue> {
@@ -26,13 +22,15 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   pageSize?: number
   pageCount?: number
-  onEdit?: (item: TData) => void
+  currentPage?: number
+  onPageChange?: (page: number) => void
   onDelete?: (item: TData) => void
   getChildren?: (item: TData) => TData[]
   onRowClick?: (item: TData) => void
 }
 
 function getChildContext<TData>(child: TData, col: any): any {
+  const colId = col?.id ?? 'unknown'
   return {
     row: {
       original: child,
@@ -41,54 +39,44 @@ function getChildContext<TData>(child: TData, col: any): any {
       getValue: (key: string) => (child as any)[key] ?? '',
       getCanExpand: () => false,
     } as any,
-    column: { id: col.id } as any,
+    column: { id: colId } as any,
   } as any
 }
 
 export function DataTable<TData = Category, TValue = any>({
   columns,
   data,
-  pageSize = 50,
+  pageSize = 10,
   pageCount = 0,
+  currentPage = 0,
+  onPageChange,
   onDelete,
   getChildren,
   onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: pageSize,
-  })
   const [expanded, setExpanded] = useState<ExpandedState>({})
 
   const table = useReactTable({
     data,
     columns,
-    pageCount,
     getCoreRowModel: getCoreRowModel(),
     state: {
       sorting,
       columnFilters,
-      pagination,
       expanded,
     },
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    onPaginationChange: setPagination,
-    getPaginationRowModel: getPaginationRowModel(),
     onExpandedChange: setExpanded,
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize,
-      },
-    },
   })
 
-return (
+  const totalPages = pageCount || 1
+
+  return (
       <div className="space-y-4">
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full">
@@ -112,100 +100,119 @@ return (
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => {
-                  const children = getChildren ? getChildren(row.original) : []
+              {data?.length ? (
+                data.map((item: any, index: number) => {
+                  const children = getChildren ? getChildren(item) : []
                   const hasChildren = children.length > 0
-                  const isExpanded = row.getIsExpanded()
-
-return (
-                   <Fragment key={row.id}>
-                     <tr
-                       className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
-                       onClick={() => onRowClick?.(row.original)}
-                     >
-                       {row.getVisibleCells().map((cell) => (
-                         <td key={cell.id} className="p-4 align-middle">
-                           {flexRender(
-                             cell.column.columnDef.cell,
-                             cell.getContext()
-                           )}
-                         </td>
-                       ))}
-                     </tr>
-{hasChildren && isExpanded && (
-                       <Fragment key={`children-${row.id}`}>
-                         {children.map((child: any, index) => (
-                           <tr key={`child-${row.id}-${child?.id ?? child?.name ?? index}`} className="border-b bg-muted/20">
-                             {columns.map((col, colIndex) => (
-                               <td key={`${row.id}-${col.id}-${colIndex}`} className="p-4 align-middle" style={{ paddingLeft: col.id === 'name' ? '48px' : undefined }}>
-                                 {flexRender(
-                                   col.cell as any,
-                                   getChildContext(child, col)
-                                 )}
-                               </td>
-                             ))}
-                           </tr>
-                         ))}
-                       </Fragment>
-                     )}
-                  </Fragment>
-                )
-              })
-            ) : (
-              <tr>
-                <td colSpan={columns.length} className="p-8 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="text-muted-foreground">No results found</div>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {pageCount > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Page {pagination.pageIndex + 1} of {pageCount}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(pageCount - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
+                  const rowId = item?.id != null ? String(item.id) : `row-${index}`
+                  const isExpanded = (expanded as Record<string, boolean | undefined>)?.[rowId]
+                  
+                  return (
+                    <Fragment key={`row-${rowId}`}>
+                      <tr
+                        className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
+                        onClick={() => onRowClick?.(item)}
+                      >
+                        {columns.map((col, colIndex) => {
+                          const colKey = col.id ?? `col-${colIndex}`
+                          return (
+                            <td key={`${rowId}-${colKey}`} className="p-4 align-middle">
+                              {flexRender(
+                                col.cell,
+                                {
+                                  row: {
+                                    original: item,
+                                    getIsExpanded: () => !!isExpanded,
+                                    toggleExpanded: () => {},
+                                    getValue: (key: string) => item?.[key] ?? '',
+                                    getCanExpand: () => hasChildren,
+                                  } as any,
+                                  column: { id: col.id } as any,
+                                } as any
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                      {hasChildren && isExpanded && (
+                        <Fragment key={`children-${rowId}`}>
+                          {children.map((child: any, childIndex: number) => {
+                            const childKey = child?.id != null ? String(child.id) : `${rowId}-child-${childIndex}`
+                            return (
+                              <tr key={`child-${rowId}-${childKey}`} className="border-b bg-muted/20">
+                                {columns.map((col, colIndex) => {
+                                  const colKey = col?.id ?? `col-${colIndex}`
+                                  return (
+                                    <td key={`${rowId}-${childKey}-${colKey}-${colIndex}`} className="p-4 align-middle" style={{ paddingLeft: colKey === 'name' ? '48px' : undefined }}>
+                                      {flexRender(
+                                        col.cell as any,
+                                        getChildContext(child, col)
+                                      )}
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            )
+                          })}
+                        </Fragment>
+                      )}
+                    </Fragment>
+                  )
+                })
+              ) : (
+                <tr>
+                  <td colSpan={columns.length} className="p-8 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="text-muted-foreground">No results found</div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
-    </div>
-  )
-}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Page {currentPage + 1} of {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(0)}
+                disabled={currentPage === 0}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(currentPage - 1)}
+                disabled={currentPage === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(currentPage + 1)}
+                disabled={currentPage >= totalPages - 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(totalPages - 1)}
+                disabled={currentPage >= totalPages - 1}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }

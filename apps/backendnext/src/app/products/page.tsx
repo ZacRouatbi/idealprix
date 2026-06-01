@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { productColumns } from "@/components/columns/product-columns"
 import { DataTable } from "@/components/data-table"
@@ -11,27 +11,40 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+
+const PAGE_SIZE = 10
+
+async function fetchProducts(page: number, limit: number) {
+  const token = localStorage.getItem('token')
+  const offset = page * limit
+  const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    }
+  })
+  if (!response.ok) throw new Error("Failed to fetch products")
+  return response.json()
+}
 
 export default function ProductsPage() {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(0)
-  const [limit, setLimit] = useState(10)
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["products", page, limit],
-    queryFn: async () => {
-      const offset = page * limit
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      })
-      if (!response.ok) throw new Error("Failed to fetch products")
-      return response.json()
-    },
+    queryKey: ["products", page],
+    queryFn: () => fetchProducts(page, PAGE_SIZE),
   })
+
+  // Smart pagination: preload next page
+  useEffect(() => {
+    if (data && data.totalPages && page < data.totalPages - 1) {
+      queryClient.prefetchQuery({
+        queryKey: ["products", page + 1],
+        queryFn: () => fetchProducts(page + 1, PAGE_SIZE),
+        staleTime: 5 * 60 * 1000,
+      })
+    }
+  }, [data, page, queryClient])
 
   const handleDelete = async (product: any) => {
     if (!confirm("Are you sure you want to delete this product?")) return
@@ -52,12 +65,7 @@ export default function ProductsPage() {
     exportToPDF(data.data, "products", "Products Report")
   }
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage)
-    queryClient.invalidateQueries({ queryKey: ["products"] })
-  }
-
-  const totalPages = Math.ceil((data?.count || 0) / limit)
+  const totalPages = data?.totalPages || 1
 
   if (isLoading) {
     return (
@@ -87,8 +95,6 @@ export default function ProductsPage() {
     )
   }
 
-  const productsWithActions = (data?.data || [])
-
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -115,24 +121,13 @@ export default function ProductsPage() {
           </Button>
         </div>
       </div>
-      <DataTable columns={productColumns(handleDelete)} data={productsWithActions} />
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handlePageChange(0)} disabled={page === 0}>
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 0}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm">Page {page + 1} of {totalPages}</span>
-          <Button variant="outline" size="sm" onClick={() => handlePageChange(page + 1)} disabled={page >= totalPages - 1}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handlePageChange(totalPages - 1)} disabled={page >= totalPages - 1}>
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      <DataTable 
+        columns={productColumns(handleDelete)} 
+        data={data?.data || []}
+        pageCount={totalPages}
+        currentPage={page}
+        onPageChange={setPage}
+      />
     </div>
   )
 }
