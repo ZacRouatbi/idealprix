@@ -96,6 +96,20 @@ const pool = new Pool({
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount INTEGER DEFAULT 0;
     `)
     console.log('✓ Added promo_code and discount_amount to orders table')
+
+    // Create settings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        language VARCHAR(10) NOT NULL DEFAULT 'en',
+        currency VARCHAR(10) NOT NULL DEFAULT 'tnd',
+        timezone VARCHAR(50) NOT NULL DEFAULT 'africa/tunis',
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_settings_user_id ON settings(user_id);
+    `)
+    console.log('✓ Created settings table')
     
     await client.query('COMMIT')
     console.log('\n✅ Migration applied successfully!')

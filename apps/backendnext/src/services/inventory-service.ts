@@ -46,7 +46,7 @@ export class InventoryService {
       query += ' WHERE ' + conditions.join(' AND ')
     }
 
-    query += ` ORDER BY i.last_updated DESC LIMIT ${filters?.limit || 50} OFFSET ${filters?.offset || 0}`
+    query += ` ORDER BY i.last_updated DESC, i.id DESC LIMIT ${filters?.limit || 50} OFFSET ${filters?.offset || 0}`
 
     const result = await db.query(query, params)
     

@@ -9,9 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Download, Plus, RefreshCw } from "lucide-react"
 import { Category } from "@/services/category-service"
-import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 
 function getRootCategories(categories: Category[]): (Category & { children: (Category & { parent_name?: string })[] })[] {
   const map = new Map<string, Category & { children: (Category & { parent_name?: string })[] }>()
@@ -31,19 +29,14 @@ function getRootCategories(categories: Category[]): (Category & { children: (Cat
 }
 
 export default function CategoriesPage() {
-  const queryClient = useQueryClient()
-  const [page, setPage] = useState(0)
   const [limit, setLimit] = useState(50)
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["categories", page, limit],
+    queryKey: ["categories"],
     queryFn: async () => {
-      const offset = page * limit
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/categories?limit=${limit}&offset=${offset}`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-        }
+      const response = await fetch(`/api/categories?limit=${limit}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       })
       if (!response.ok) throw new Error("Failed to fetch categories")
       return response.json()
@@ -70,9 +63,6 @@ export default function CategoriesPage() {
   }
 
   const categoriesData = data?.data || []
-  const totalCount = data?.count || 0
-  const totalPages = Math.ceil(totalCount / limit) || 1
-
   const roots = getRootCategories(categoriesData)
 
   if (isLoading) {
@@ -131,26 +121,8 @@ export default function CategoriesPage() {
       <DataTable
         columns={categoryColumns(handleDelete, (cat) => cat.children || [])}
         data={roots}
-        pageCount={totalPages}
         getChildren={(cat) => cat.children || []}
       />
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0}>
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page === 0}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm">Page {page + 1} of {totalPages}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}>
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

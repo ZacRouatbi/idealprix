@@ -67,10 +67,9 @@ export const categoryColumns = (
     accessorKey: "parent_id",
     header: "Parent",
     cell: ({ row }) => {
-      const parentId = row.getValue("parent_id") as string
-      if (!parentId) return <span className="text-muted-foreground">Root</span>
-      const parentName = (row.original as any).parent_name
-      return <span className="text-muted-foreground">{parentName || parentId}</span>
+      const category = row.original as any
+      if (!category.parent_id) return <span className="text-muted-foreground">Root</span>
+      return <span className="text-muted-foreground">{category.parent_name || 'Parent'}</span>
     },
   },
   {

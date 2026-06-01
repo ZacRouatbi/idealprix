@@ -84,7 +84,7 @@ export class OrderService {
     // Sanitize limit and offset to prevent SQL injection
     const limit = Math.max(1, Math.min(100, filters?.limit || 50))
     const offset = Math.max(0, filters?.offset || 0)
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
+    query += ` ORDER BY created_at DESC, o.id DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
     params.push(limit, offset)
 
     const result = await db.query(query, params)
@@ -233,7 +233,7 @@ export class OrderService {
     // Sanitize limit and offset to prevent SQL injection
     const limit = Math.max(1, Math.min(100, filters?.limit || 50))
     const offset = Math.max(0, filters?.offset || 0)
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
+    query += ` ORDER BY created_at DESC, id DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`
     params.push(limit, offset)
 
     const result = await db.query(query, params)

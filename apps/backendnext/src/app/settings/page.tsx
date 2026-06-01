@@ -1,116 +1,98 @@
 "use client"
 
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Save, Globe, Moon, Sun, Bell, Shield, Download } from "lucide-react"
-import { exportJSON } from "@/lib/export-utils"
+import { Save, Globe, Shield, Loader2, CheckCircle } from "lucide-react"
+import { useState } from "react"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+
+async function fetchSettings() {
+  const token = localStorage.getItem('token')
+  const response = await fetch('/api/settings', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!response.ok) throw new Error('Failed to fetch settings')
+  return response.json()
+}
+
+async function updateSettings(data: any) {
+  const token = localStorage.getItem('token')
+  const response = await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(data)
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(error.error || 'Failed to update settings')
+  }
+  return response.json()
+}
+
+async function changePassword(currentPassword: string, newPassword: string) {
+  const token = localStorage.getItem('token')
+  const response = await fetch('/api/settings', {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify({ currentPassword, newPassword })
+  })
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error(error.error || 'Failed to change password')
+  }
+  return response.json()
+}
 
 export default function SettingsPage() {
-  const handleExportSettings = () => {
-    const settingsData = {
-      theme: "light",
-      language: "en",
-      currency: "tnd",
-      timezone: "africa/tunis",
-      emailNotifications: true,
-      orderAlerts: true,
-      stockAlerts: true,
+  const queryClient = useQueryClient()
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false)
+
+  const { isLoading } = useQuery({
+    queryKey: ['settings'],
+    queryFn: fetchSettings,
+  })
+
+  const passwordMutation = useMutation({
+    mutationFn: () => changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setShowPasswordSuccess(true)
+      setTimeout(() => setShowPasswordSuccess(false), 3000)
+    },
+    onError: (error: any) => {
+      alert(error.message || 'Failed to change password')
     }
-    exportJSON(settingsData, "settings-backup")
+  })
+
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      alert('Passwords do not match')
+      return
+    }
+    passwordMutation.mutate()
   }
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-        <Button variant="outline" onClick={handleExportSettings}>
-          <Download className="h-4 w-4 mr-2" />
-          Export Settings
-        </Button>
       </div>
       
       <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sun className="h-5 w-5" />
-              Appearance
-            </CardTitle>
-            <CardDescription>
-              Customize the look and feel of your dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="theme">Theme</Label>
-              <Select defaultValue="light">
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="Select theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="compact">Compact Mode</Label>
-                <p className="text-sm text-muted-foreground">
-                  Reduce spacing between elements
-                </p>
-              </div>
-              <Switch id="compact" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notifications
-            </CardTitle>
-            <CardDescription>
-              Configure how you receive notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="email-notifications">Email notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive notifications via email
-                </p>
-              </div>
-              <Switch id="email-notifications" defaultChecked />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="order-alerts">Order alerts</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get notified about new orders
-                </p>
-              </div>
-              <Switch id="order-alerts" defaultChecked />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="stock-alerts">Low stock alerts</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get notified when products are low in stock
-                </p>
-              </div>
-              <Switch id="stock-alerts" defaultChecked />
-            </div>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -118,85 +100,60 @@ export default function SettingsPage() {
               Security
             </CardTitle>
             <CardDescription>
-              Security and privacy settings
+              Change your password and security settings
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="current-password">Current Password</Label>
-              <Input id="current-password" type="password" />
+              <Input 
+                id="current-password" 
+                type="password" 
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-password">New Password</Label>
-              <Input id="new-password" type="password" />
+              <Input 
+                id="new-password" 
+                type="password" 
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input id="confirm-password" type="password" />
+              <Input 
+                id="confirm-password" 
+                type="password" 
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
             </div>
+            <Button 
+              onClick={handleChangePassword} 
+              disabled={passwordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
+            >
+              {passwordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Change Password
+            </Button>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              Regional Settings
-            </CardTitle>
-            <CardDescription>
-              Configure regional preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
-              <Select defaultValue="en">
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="ar">العربية</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="currency">Currency</Label>
-              <Select defaultValue="tnd">
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tnd">Tunisian Dinar (TND)</SelectItem>
-                  <SelectItem value="eur">Euro (€)</SelectItem>
-                  <SelectItem value="usd">US Dollar ($)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
-              <Select defaultValue="africa/tunis">
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="Select timezone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="africa/tunis">Africa/Tunis</SelectItem>
-                  <SelectItem value="europe/paris">Europe/Paris</SelectItem>
-                  <SelectItem value="utc">UTC</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end">
-          <Button>
-            <Save className="mr-2 h-4 w-4" />
-            Save Settings
-          </Button>
-        </div>
       </div>
+
+      <Dialog open={showPasswordSuccess} onOpenChange={setShowPasswordSuccess}>
+        <DialogContent>
+          <DialogTitle>Password Changed</DialogTitle>
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+            <div>
+              <h3 className="font-medium">Password Changed</h3>
+              <p className="text-sm text-muted-foreground">Your password has been successfully updated.</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

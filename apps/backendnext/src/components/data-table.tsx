@@ -56,7 +56,7 @@ export function DataTable<TData = Category, TValue = any>({
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [expanded, setExpanded] = useState<ExpandedState>({})
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const table = useReactTable({
     data,
@@ -65,13 +65,18 @@ export function DataTable<TData = Category, TValue = any>({
     state: {
       sorting,
       columnFilters,
-      expanded,
+      expanded: expanded as ExpandedState,
     },
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
-    onExpandedChange: setExpanded,
+    onExpandedChange: (updater) => {
+      const newExpanded = typeof updater === 'function' ? updater(expanded as ExpandedState) : updater
+      if (typeof newExpanded === 'object' && newExpanded !== null && !Array.isArray(newExpanded)) {
+        setExpanded(newExpanded as Record<string, boolean>)
+      }
+    },
   })
 
   const totalPages = pageCount || 1
@@ -105,7 +110,13 @@ export function DataTable<TData = Category, TValue = any>({
                   const children = getChildren ? getChildren(item) : []
                   const hasChildren = children.length > 0
                   const rowId = item?.id != null ? String(item.id) : `row-${index}`
-                  const isExpanded = (expanded as Record<string, boolean | undefined>)?.[rowId]
+                  
+                  const toggleExpanded = () => {
+                    setExpanded(prev => ({
+                      ...prev,
+                      [rowId]: !prev?.[rowId]
+                    }))
+                  }
                   
                   return (
                     <Fragment key={`row-${rowId}`}>
@@ -122,8 +133,8 @@ export function DataTable<TData = Category, TValue = any>({
                                 {
                                   row: {
                                     original: item,
-                                    getIsExpanded: () => !!isExpanded,
-                                    toggleExpanded: () => {},
+                                    getIsExpanded: () => !!expanded?.[rowId],
+                                    toggleExpanded,
                                     getValue: (key: string) => item?.[key] ?? '',
                                     getCanExpand: () => hasChildren,
                                   } as any,
@@ -134,7 +145,7 @@ export function DataTable<TData = Category, TValue = any>({
                           )
                         })}
                       </tr>
-                      {hasChildren && isExpanded && (
+                      {hasChildren && expanded?.[rowId] && (
                         <Fragment key={`children-${rowId}`}>
                           {children.map((child: any, childIndex: number) => {
                             const childKey = child?.id != null ? String(child.id) : `${rowId}-child-${childIndex}`

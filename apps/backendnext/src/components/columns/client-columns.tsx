@@ -1,7 +1,6 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { Users } from "lucide-react"
 
 export interface Client {
   id: string
@@ -22,14 +21,6 @@ export const clientColumns: ColumnDef<Client>[] = [
     cell: ({ row }) => {
       return <div className="font-medium">{row.getValue("email")}</div>
     },
-  },
-  {
-    accessorKey: "first_name",
-    header: "First Name",
-  },
-  {
-    accessorKey: "last_name",
-    header: "Last Name",
   },
   {
     accessorKey: "role",
