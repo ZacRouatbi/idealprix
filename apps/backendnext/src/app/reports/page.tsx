@@ -11,9 +11,9 @@ import { db } from "@/lib/db"
 export const dynamic = "force-dynamic"
 
 async function getDashboardStats() {
-  const [orderStats, productStats, inventoryStats, clientStats, categoryStats, lowStockItems] = await Promise.all([
+  const [orderStats, productCount, inventoryStats, clientStats, categoryStats, lowStockItems] = await Promise.all([
     orderService.getOrderStats(),
-    productService.listProducts({ limit: 1 }),
+    productService.getProductCount(),
     inventoryService.listInventory({ limit: 1 }),
     clientService.listClients({ limit: 1 }),
     categoryService.listCategories({ limit: 1 }),
@@ -23,7 +23,7 @@ async function getDashboardStats() {
   return {
     totalOrders: orderStats.total,
     totalRevenue: Number(orderStats.total_amount),
-    totalProducts: productStats.count,
+    totalProducts: productCount,
     totalInventory: inventoryStats.count,
     totalCustomers: clientStats.count,
     totalCategories: categoryStats.count,

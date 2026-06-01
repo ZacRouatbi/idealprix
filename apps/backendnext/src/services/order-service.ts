@@ -178,6 +178,43 @@ export class OrderService {
     }
   }
 
+  async getOrderStatsWithTrend(): Promise<{ 
+    total: number; 
+    total_amount: number; 
+    trend: number;
+    trendDirection: 'up' | 'down' 
+  }> {
+    const now = new Date()
+    const currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const previousPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+
+    const [currentResult, previousResult] = await Promise.all([
+      db.query(
+        'SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as total_amount FROM orders WHERE created_at >= $1',
+        [currentPeriodStart.toISOString()]
+      ),
+      db.query(
+        'SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as total_amount FROM orders WHERE created_at >= $1 AND created_at < $2',
+        [previousPeriodStart.toISOString(), currentPeriodStart.toISOString()]
+      ),
+    ])
+
+    const currentTotal = parseInt(currentResult.rows[0].total)
+    const currentAmount = parseFloat(currentResult.rows[0].total_amount)
+    const previousTotal = parseInt(previousResult.rows[0].total)
+    const previousAmount = parseFloat(previousResult.rows[0].total_amount)
+
+    const trend = previousAmount > 0 ? ((currentAmount - previousAmount) / previousAmount) * 100 : 0
+
+    return {
+      total: currentTotal,
+      total_amount: currentAmount,
+      trend: Math.abs(trend),
+      trendDirection: trend >= 0 ? 'up' : 'down',
+    }
+  }
+
   async getCustomerOrders(customerEmail: string, filters?: OrderFilters): Promise<PaginatedResponse<OrderWithItems>> {
     let query = 'SELECT * FROM orders WHERE customer_email = $1'
     const conditions: string[] = []

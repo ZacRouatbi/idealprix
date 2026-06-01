@@ -4,6 +4,8 @@ import { Download, Calendar } from "lucide-react"
 import { orderService } from "@/services/order-service"
 import { productService } from "@/services/product-service"
 import { auditService } from "@/services/audit-service"
+import { inventoryService } from "@/services/inventory-service"
+import { db } from "@/lib/db"
 import { RecentOrders } from "@/components/recent-orders"
 import { RecentActivity } from "@/components/recent-activity"
 import { cookies } from "next/headers"
@@ -27,19 +29,53 @@ async function verifyAuth(): Promise<boolean> {
   }
 }
 
+function calculateTrend(current: number, previous: number): { trend: string; direction: 'up' | 'down' } {
+  if (previous === 0) return { trend: '0%', direction: 'up' }
+  const percentage = ((current - previous) / previous) * 100
+  return {
+    trend: `${percentage >= 0 ? '+' : ''}${percentage.toFixed(1)}%`,
+    direction: percentage >= 0 ? 'up' : 'down'
+  }
+}
+
 async function getDashboardData() {
   try {
-    const [orderStats, productStats, recentOrders, recentActivities] = await Promise.all([
+    const now = new Date()
+    const currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+
+    const [orderStats, productCount, lowStockItems, recentOrders, recentActivities, previousOrderStats, previousProductCount, previousLowStockCount] = await Promise.all([
       orderService.getOrderStats(),
-      productService.listProducts({ limit: 1 }),
+      productService.getProductCount(),
+      inventoryService.getLowStockItems(),
       orderService.getRecentOrders(5),
       auditService.getRecentActivities(8),
+      db.query('SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as total_amount FROM orders WHERE created_at >= $1 AND created_at < $2', [previousPeriodStart.toISOString(), currentPeriodStart.toISOString()]),
+      db.query('SELECT COUNT(*) FROM products WHERE created_at < $1', [currentPeriodStart.toISOString()]),
+      db.query('SELECT COUNT(*) FROM inventory i JOIN products p ON i.product_id = p.id WHERE (i.quantity - i.reserved_quantity) < COALESCE(p.low_stock_threshold, 10) AND p.created_at < $1', [currentPeriodStart.toISOString()]),
     ])
+
+    const prevOrderRow = previousOrderStats.rows[0] || { total: 0, total_amount: 0 }
+    const prevProductRow = previousProductCount.rows[0] || { count: 0 }
+    const prevLowStockRow = previousLowStockCount.rows[0] || { count: 0 }
+
+    const previousTotal = parseInt(prevOrderRow.total) || 0
+    const previousAmount = parseFloat(prevOrderRow.total_amount) || 0
+    const currentTrend = calculateTrend(orderStats.total_amount, previousAmount)
+    const productTrend = calculateTrend(productCount, parseInt(prevProductRow.count) || 0)
+    const lowStockTrend = calculateTrend(lowStockItems.length, parseInt(prevLowStockRow.count) || 0)
 
     return {
       totalOrders: orderStats.total,
       totalRevenue: orderStats.total_amount,
-      totalProducts: productStats.count,
+      orderTrend: currentTrend.trend,
+      orderTrendDirection: currentTrend.direction,
+      totalProducts: productCount,
+      productTrend: productTrend.trend,
+      productTrendDirection: productTrend.direction,
+      lowStockCount: lowStockItems.length,
+      lowStockTrend: lowStockTrend.trend,
+      lowStockTrendDirection: lowStockTrend.direction,
       recentOrders,
       recentActivities,
     }
@@ -48,7 +84,14 @@ async function getDashboardData() {
     return {
       totalOrders: 0,
       totalRevenue: 0,
+      orderTrend: '+0%',
+      orderTrendDirection: 'up' as const,
       totalProducts: 0,
+      productTrend: '+0%',
+      productTrendDirection: 'up' as const,
+      lowStockCount: 0,
+      lowStockTrend: '+0%',
+      lowStockTrendDirection: 'up' as const,
       recentOrders: [],
       recentActivities: [],
     }
@@ -101,26 +144,26 @@ export default async function DashboardPage() {
         <MetricsCard
           title="Total Revenue"
           value={`${data.totalRevenue.toLocaleString('fr-TN')} TND`}
-          trend="+12.5%"
-          trendDirection="up"
+          trend={data.orderTrend}
+          trendDirection={data.orderTrendDirection}
         />
         <MetricsCard
           title="Orders"
           value={data.totalOrders.toString()}
-          trend="+8.2%"
-          trendDirection="up"
+          trend={data.orderTrend}
+          trendDirection={data.orderTrendDirection}
         />
         <MetricsCard
           title="Products"
           value={data.totalProducts.toString()}
-          trend="+3.1%"
-          trendDirection="down"
+          trend={data.productTrend}
+          trendDirection={data.productTrendDirection}
         />
         <MetricsCard
           title="Low Stock"
-          value="23"
-          trend="-2.5%"
-          trendDirection="up"
+          value={data.lowStockCount.toString()}
+          trend={data.lowStockTrend}
+          trendDirection={data.lowStockTrendDirection === 'up' ? 'down' : 'up'}
         />
       </div>
       

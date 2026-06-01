@@ -33,16 +33,16 @@ const getActivityIcon = (type: Activity["type"]) => {
   }
 }
 
-const getStatusVariant = (status?: Activity["status"]) => {
+const getStatusClasses = (status?: Activity["status"]) => {
   switch (status) {
     case "success":
-      return "default"
+      return "bg-green-100 text-green-800 border-green-200"
     case "warning":
-      return "secondary"
+      return "bg-yellow-100 text-yellow-800 border-yellow-200"
     case "error":
-      return "destructive"
+      return "bg-red-100 text-red-800 border-red-200"
     default:
-      return "outline"
+      return "bg-gray-100 text-gray-800 border-gray-200"
   }
 }
 
@@ -87,7 +87,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                 </TableCell>
                 <TableCell>
                   {activity.status && (
-                    <Badge variant={getStatusVariant(activity.status)} className="capitalize">
+                    <Badge className={getStatusClasses(activity.status)}>
                       {activity.status}
                     </Badge>
                   )}

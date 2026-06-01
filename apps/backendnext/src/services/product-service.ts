@@ -190,6 +190,11 @@ export class ProductService {
     return result.rows[0] as Product || null
   }
 
+  async getProductCount(): Promise<number> {
+    const result = await db.query('SELECT COUNT(*) FROM products')
+    return parseInt(result.rows[0].count)
+  }
+
   async createProduct(data: Partial<Product>): Promise<Product> {
     if (!data.name) {
       throw new Error('Product name is required')
