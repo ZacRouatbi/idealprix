@@ -6,7 +6,7 @@ import { productService } from "@/services/product-service"
 import { inventoryService } from "@/services/inventory-service"
 import { clientService } from "@/services/client-service"
 import { categoryService } from "@/services/category-service"
-import Link from "next/link"
+import { db } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
@@ -22,7 +22,7 @@ async function getDashboardStats() {
 
   return {
     totalOrders: orderStats.total,
-    totalRevenue: orderStats.total_amount,
+    totalRevenue: Number(orderStats.total_amount),
     totalProducts: productStats.count,
     totalInventory: inventoryStats.count,
     totalCustomers: clientStats.count,
@@ -42,7 +42,7 @@ async function getSalesData() {
     if (!dailySales[date]) {
       dailySales[date] = { revenue: 0, orders: 0 }
     }
-    dailySales[date].revenue += parseFloat(order.total_amount as any) || 0
+    dailySales[date].revenue += Number(order.total_amount) || 0
     dailySales[date].orders += 1
   })
 
@@ -53,10 +53,18 @@ async function getSalesData() {
 }
 
 async function getProductSalesData() {
-  const products = await productService.listProducts({ limit: 20 })
-  return products.data.map(p => ({
-    name: p.name,
-    sales: Math.floor(Math.random() * 100) + 10,
+  const result = await db.query(`
+    SELECT p.name, SUM(oi.quantity) as total_sold
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    GROUP BY p.name
+    ORDER BY total_sold DESC
+    LIMIT 20
+  `)
+
+  return result.rows.map((row: any) => ({
+    name: row.name,
+    sales: parseInt(row.total_sold),
   }))
 }
 
@@ -90,7 +98,7 @@ export default async function ReportsPage() {
               {(stats?.totalRevenue || 0).toLocaleString("fr-TN")} TND
             </div>
             <p className="text-xs text-muted-foreground">
-              +12% from last month
+              From {stats?.totalOrders || 0} orders
             </p>
           </CardContent>
         </Card>
@@ -102,9 +110,6 @@ export default async function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              +8% from last month
-            </p>
           </CardContent>
         </Card>
 
@@ -125,13 +130,10 @@ export default async function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalCustomers || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              +5% from last month
-            </p>
           </CardContent>
         </Card>
       </div>
-
+      
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <ReportCard
           title="Sales Report"
@@ -175,42 +177,6 @@ export default async function ReportsPage() {
           href="/api/reports/categories"
         />
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Reports</CardTitle>
-          <CardDescription>
-            Your recently generated reports
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[
-              { name: "Sales Report - May 2026", date: "2026-05-15", size: "2.4 MB" },
-              { name: "Inventory Report - April 2026", date: "2026-04-30", size: "1.8 MB" },
-              { name: "Customer Analytics - Q1 2026", date: "2026-04-01", size: "3.2 MB" },
-            ].map((report) => (
-              <div
-                key={report.name}
-                className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{report.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Generated on {report.date} • {report.size}
-                    </p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
