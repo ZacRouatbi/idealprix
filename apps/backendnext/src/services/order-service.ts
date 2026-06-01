@@ -30,6 +30,7 @@ export interface Order {
   notes?: string
   created_at: string
   updated_at: string
+  items?: OrderItem[]
 }
 
 export interface OrderItem {

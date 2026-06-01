@@ -2,29 +2,33 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
-const data = [
-  { name: "Jan", total: 12000 },
-  { name: "Feb", total: 19000 },
-  { name: "Mar", total: 15000 },
-  { name: "Apr", total: 18000 },
-  { name: "May", total: 22000 },
-  { name: "Jun", total: 25000 },
-  { name: "Jul", total: 28000 },
-  { name: "Aug", total: 31000 },
-  { name: "Sep", total: 27000 },
-  { name: "Oct", total: 24000 },
-  { name: "Nov", total: 29000 },
-  { name: "Dec", total: 32000 },
+const defaultData = [
+  { name: "Jan", total: 0 },
+  { name: "Feb", total: 0 },
+  { name: "Mar", total: 0 },
+  { name: "Apr", total: 0 },
+  { name: "May", total: 0 },
+  { name: "Jun", total: 0 },
+  { name: "Jul", total: 0 },
+  { name: "Aug", total: 0 },
+  { name: "Sep", total: 0 },
+  { name: "Oct", total: 0 },
+  { name: "Nov", total: 0 },
+  { name: "Dec", total: 0 },
 ]
 
-export function SalesChart() {
+interface SalesChartProps {
+  data?: { name: string; total: number }[]
+}
+
+export function SalesChart({ data = defaultData }: SalesChartProps) {
   return (
     <ResponsiveContainer width="100%" height={350}>
       <LineChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis />
-        <Tooltip />
+        <Tooltip formatter={(value: number) => [`${value.toLocaleString('fr-TN')} TND`, 'Revenue']} />
         <Line type="monotone" dataKey="total" stroke="#1E40AF" strokeWidth={2} />
       </LineChart>
     </ResponsiveContainer>

@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RefreshCw, Download, Mail, Truck, MapPin, User, Package } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
-import { Order, OrderStatus } from "@/services/order-service"
+import { Order, OrderWithItems, OrderStatus } from "@/services/order-service"
 import { useState } from "react"
 import {
   Dialog,
@@ -39,7 +39,7 @@ export default function OrdersPage() {
   })
 
   const [emailStatus, setEmailStatus] = useState<Record<string, "idle" | "sending" | "sent" | "error">>({})
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleExport = () => {
@@ -104,8 +104,24 @@ export default function OrdersPage() {
     }
   }
 
-  const handleRowClick = (order: Order) => {
-    setSelectedOrder(order)
+  const handleRowClick = async (order: OrderWithItems) => {
+    // Fetch full order details including items
+    try {
+      const token = localStorage.getItem('token')
+      const headers: HeadersInit = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      const response = await fetch(`/api/orders/${order.id}`, { headers })
+      if (response.ok) {
+        const fullOrder = await response.json()
+        setSelectedOrder(fullOrder)
+      } else {
+        setSelectedOrder(order)
+      }
+    } catch {
+      setSelectedOrder(order)
+    }
     setIsModalOpen(true)
   }
 
@@ -156,42 +172,77 @@ export default function OrdersPage() {
           </Button>
         </div>
       </div>
-      <DataTable 
-        columns={orderColumns(handleStatusChange, handleSendEmail)} 
-        data={data?.data || []}
-        onRowClick={handleRowClick}
-      />
+<DataTable 
+            columns={orderColumns(handleStatusChange, handleSendEmail)} 
+            data={data?.data || []}
+            onRowClick={handleRowClick}
+          />
       
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
           </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Delivery Type:</span>
-                <span className="text-sm">
-                  {selectedOrder.shipping_provider?.name || "Standard"}
-                </span>
-              </div>
-              
-              {selectedOrder.shipping_provider?.phone && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Phone:</span>
-                  <span className="text-sm">{selectedOrder.shipping_provider.phone}</span>
+{selectedOrder && (
+             <div className="space-y-4">
+               <div className="flex items-center gap-2">
+                 <Truck className="h-4 w-4 text-muted-foreground" />
+                 <span className="text-sm font-medium">Delivery Type:</span>
+                 <span className="text-sm">
+                   {selectedOrder.shipping_provider?.name || "Standard"}
+                 </span>
+               </div>
+               
+               {selectedOrder.shipping_provider?.phone && (
+                 <div className="flex items-center gap-2">
+                   <span className="text-sm font-medium">Phone:</span>
+                   <span className="text-sm">{selectedOrder.shipping_provider.phone}</span>
+                 </div>
+               )}
+               
+               {selectedOrder.items && selectedOrder.items.length > 0 && (
+                 <div className="border-t pt-2">
+                   <div className="flex items-start gap-2">
+                     <Package className="h-4 w-4 text-muted-foreground mt-0.5" />
+                     <div className="flex-1">
+                       <span className="text-sm font-medium">Products:</span>
+                       <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                         {selectedOrder.items.map((item) => (
+                           <div key={item.id} className="flex justify-between">
+                             <span>{item.product_name}</span>
+                             <span className="text-right">
+                               {item.quantity} × {Number(item.unit_price).toLocaleString("fr-TN")} TND
+                             </span>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               )}
+               
+<div className="border-t pt-2">
+                  <div className="flex justify-between items-center">
+                    {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.subtotal && (
+                      <>
+                        <span className="text-sm font-medium">Subtotal:</span>
+                        <span className="text-sm">{Number(selectedOrder.subtotal).toLocaleString("fr-TN")} TND</span>
+                      </>
+                    )}
+                  </div>
+                  {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.promo_code && (
+                    <div className="flex justify-between items-center text-red-600">
+                      <span className="text-sm font-medium">Discount ({selectedOrder.promo_code}):</span>
+                      <span className="text-sm">-{Number(selectedOrder.discount_amount).toLocaleString("fr-TN")} TND</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Total:</span>
+                    <span className="text-lg font-bold">
+                      {selectedOrder.total_amount.toLocaleString("fr-TN")} TND
+                    </span>
+                  </div>
                 </div>
-              )}
-              
-              <div className="border-t pt-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Total:</span>
-                  <span className="text-lg font-bold">
-                    {selectedOrder.total_amount.toLocaleString("fr-TN")} TND
-                  </span>
-                </div>
-              </div>
               
               {selectedOrder.notes && (
                 <div className="border-t pt-2">

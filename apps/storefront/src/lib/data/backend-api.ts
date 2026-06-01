@@ -186,6 +186,8 @@ export interface Order {
   total_amount: number
   subtotal?: number
   shipping_amount?: number
+  promo_code?: string
+  discount_amount?: number
   shipping_address?: {
     fullName: string
     address: string

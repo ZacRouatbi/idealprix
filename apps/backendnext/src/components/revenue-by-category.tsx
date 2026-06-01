@@ -2,22 +2,22 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
-const data = [
-  { name: "Vaisselle", revenue: 45000 },
-  { name: "Nettoyage", revenue: 32000 },
-  { name: "Cosmétiques", revenue: 28000 },
-  { name: "Épicerie", revenue: 15000 },
-  { name: "Décor", revenue: 12000 },
+const defaultData = [
+  { name: "No data", revenue: 0 },
 ]
 
-export function RevenueByCategory() {
+interface RevenueByCategoryProps {
+  data?: { name: string; revenue: number }[]
+}
+
+export function RevenueByCategory({ data = defaultData }: RevenueByCategoryProps) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="name" />
         <YAxis />
-        <Tooltip />
+        <Tooltip formatter={(value: number) => [`${value.toLocaleString('fr-TN')} TND`, 'Revenue']} />
         <Bar dataKey="revenue" fill="#1E40AF" />
       </BarChart>
     </ResponsiveContainer>

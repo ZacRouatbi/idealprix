@@ -1,21 +1,101 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MetricsCard } from "@/components/metrics-card"
 import { Button } from "@/components/ui/button"
 import { Download, Calendar } from "lucide-react"
-import { orderService } from "@/services/order-service"
+import { SalesChart } from "@/components/sales-chart"
+import { OrderStatusChart } from "@/components/order-status-chart"
+import { RevenueByCategory } from "@/components/revenue-by-category"
+import { MetricsCard } from "@/components/metrics-card"
+import { useQuery } from "@tanstack/react-query"
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
-export const dynamic = 'force-dynamic'
-
-async function getAnalyticsData() {
-  const orderStats = await orderService.getOrderStats()
-  return {
-    totalRevenue: orderStats.total_amount,
-    totalOrders: orderStats.total,
+async function fetchAnalytics() {
+  const token = localStorage.getItem('token')
+  const headers: HeadersInit = {}
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
   }
+  const res = await fetch("/api/analytics", { headers })
+  if (!res.ok) throw new Error("Failed to fetch analytics")
+  return res.json()
 }
 
-export default async function AnalyticsPage() {
-  const data = await getAnalyticsData()
+export default function AnalyticsPage() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["analytics"],
+    queryFn: fetchAnalytics,
+  })
+
+  const handleExport = () => {
+    if (!data) return
+    
+    const doc = new jsPDF()
+    doc.setFontSize(20)
+    doc.text('Analytics Report', 14, 20)
+    doc.setFontSize(12)
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30)
+
+    autoTable(doc, {
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total Revenue', `${(data.totalRevenue || 0).toLocaleString()} TND`],
+        ['Total Orders', (data.totalOrders || 0).toString()],
+        ['Avg. Order Value', `${((data.totalRevenue || 0) / (data.totalOrders || 1)).toFixed(2)} TND`],
+      ],
+      startY: 40,
+    })
+
+    if (data.salesByMonth && data.salesByMonth.length > 0) {
+      autoTable(doc, {
+        head: [['Month', 'Revenue']],
+        body: data.salesByMonth.map((row: { name: string; total: number }) => [
+          row.name,
+          `${row.total.toLocaleString()} TND`,
+        ]),
+        startY: 60,
+      })
+    }
+
+    if (data.revenueByCategory && data.revenueByCategory.length > 0) {
+      autoTable(doc, {
+        head: [['Category', 'Revenue']],
+        body: data.revenueByCategory.map((row: { name: string; revenue: number }) => [
+          row.name,
+          `${row.revenue.toLocaleString()} TND`,
+        ]),
+        startY: data.salesByMonth?.length > 0 ? 100 : 60,
+      })
+    }
+
+    doc.save(`Analytics_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-6 p-8 pt-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="h-24 bg-muted rounded animate-pulse" />
+          <div className="h-24 bg-muted rounded animate-pulse" />
+          <div className="h-24 bg-muted rounded animate-pulse" />
+          <div className="h-24 bg-muted rounded animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 space-y-6 p-8 pt-6">
+        <p className="text-destructive">Failed to load analytics data</p>
+      </div>
+    )
+  }
+
+  const totalRevenue = data?.totalRevenue || 0
+  const totalOrders = data?.totalOrders || 0
+  const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : "0"
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -31,11 +111,9 @@ export default async function AnalyticsPage() {
             <Calendar className="mr-2 h-4 w-4" />
             Last 30 days
           </Button>
-          <Button asChild>
-            <a href="/api/analytics/export" download>
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </a>
+          <Button onClick={handleExport}>
+            <Download className="mr-2 h-4 w-4" />
+            Export
           </Button>
         </div>
       </div>
@@ -43,13 +121,13 @@ export default async function AnalyticsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricsCard
           title="Total Revenue"
-          value={`${data.totalRevenue.toLocaleString('fr-TN')} TND`}
+          value={`${totalRevenue.toLocaleString('fr-TN')} TND`}
           trend="+12.5%"
           trendDirection="up"
         />
         <MetricsCard
           title="Orders"
-          value={data.totalOrders.toString()}
+          value={totalOrders.toString()}
           trend="+8.2%"
           trendDirection="up"
         />
@@ -61,7 +139,7 @@ export default async function AnalyticsPage() {
         />
         <MetricsCard
           title="Avg. Order Value"
-          value="101.56 TND"
+          value={`${avgOrderValue} TND`}
           trend="-2.1%"
           trendDirection="down"
         />
@@ -76,7 +154,7 @@ export default async function AnalyticsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <div className="h-64 bg-muted rounded" />
+            <SalesChart data={data?.salesByMonth} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-3">
@@ -85,7 +163,7 @@ export default async function AnalyticsPage() {
             <CardDescription>Current order status breakdown</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64 bg-muted rounded" />
+            <OrderStatusChart data={data?.orderStatusData} />
           </CardContent>
         </Card>
       </div>
@@ -98,7 +176,7 @@ export default async function AnalyticsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 bg-muted rounded" />
+          <RevenueByCategory data={data?.revenueByCategory} />
         </CardContent>
       </Card>
     </div>

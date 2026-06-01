@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { Order, OrderStatus } from "@/services/order-service"
+import { OrderStatus, OrderWithItems } from "@/services/order-service"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,7 +30,7 @@ const statusIcons: Record<string, React.ReactNode> = {
   cancelled: <XCircle className="h-4 w-4" />,
 }
 
-const nextStatusMap: Record<OrderStatus, OrderStatus[]> = {
+const nextStatusMap: Record<string, string[]> = {
   pending: ["processing", "cancelled"],
   processing: ["paid", "cancelled"],
   paid: ["shipped", "cancelled"],
@@ -41,8 +41,8 @@ const nextStatusMap: Record<OrderStatus, OrderStatus[]> = {
 
 export const orderColumns = (
   onStatusChange?: (orderId: string, status: OrderStatus) => void,
-  onSendEmail?: (order: Order) => void
-): ColumnDef<Order>[] => [
+  onSendEmail?: (order: OrderWithItems) => void
+): ColumnDef<OrderWithItems>[] => [
   {
     accessorKey: "order_number",
     header: "#",
@@ -97,37 +97,37 @@ export const orderColumns = (
 
       return (
         <div className="flex items-center gap-1">
-{nextStatuses.length > 0 && (
-             <DropdownMenu>
-               <DropdownMenuTrigger asChild>
-                 <Button 
-                   variant="ghost" 
-                   size="sm"
-                   onClick={(e) => e.stopPropagation()}
-                 >
-                   {statusIcons[order.status]}
-                   <ChevronDown className="h-3 w-3 ml-1" />
-                 </Button>
-               </DropdownMenuTrigger>
-               <DropdownMenuContent align="end">
-                 {nextStatuses.map((status) => (
-                   <DropdownMenuItem
-                     key={status}
-                     onClick={(e) => {
-                       e.stopPropagation()
-                       onStatusChange?.(order.id, status)
-                     }}
-                     className="cursor-pointer"
-                   >
-                     <span className="flex items-center gap-2">
-                       {statusIcons[status]}
-                       {status}
-                     </span>
-                   </DropdownMenuItem>
-                 ))}
-               </DropdownMenuContent>
-             </DropdownMenu>
-           )}
+          {nextStatuses.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {statusIcons[order.status]}
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {nextStatuses.map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onStatusChange?.(order.id, status as OrderStatus)
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      {statusIcons[status]}
+                      {status}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             variant="ghost"
             size="sm"

@@ -17,8 +17,10 @@ export interface BackendOrder {
   order_number: string
   status: "pending" | "processing" | "paid" | "shipped" | "delivered" | "cancelled"
   total_amount: number
-  subtotal: number
+  subtotal?: number
   shipping_amount?: number
+  promo_code?: string
+  discount_amount?: number
   created_at: string
   customer_name?: string
   customer_email?: string
@@ -34,12 +36,14 @@ export interface BackendOrder {
   items?: OrderItem[]
 }
 
-function formatPrice(amount: number): string {
+function formatPrice(amount: number | string | undefined): string {
+  if (amount === undefined || amount === null) return ""
+  const num = typeof amount === "string" ? parseFloat(amount) : amount
   return new Intl.NumberFormat("fr-TN", {
     style: "currency",
     currency: "TND",
     minimumFractionDigits: 3,
-  }).format(amount)
+  }).format(num)
 }
 
 function formatDate(dateStr: string): string {
@@ -171,6 +175,18 @@ export function OrderCard({ order }: OrderCardProps) {
 
           {/* Shipping & Total */}
           <div className="bg-white rounded-lg border border-[#E8E6E1] p-4 space-y-2">
+            {order.discount_amount && order.discount_amount > 0 && order.subtotal && (
+              <div className="flex justify-between text-sm text-[#717182]">
+                <span>Sous-total</span>
+                <span>{formatPrice(order.subtotal)}</span>
+              </div>
+            )}
+            {order.discount_amount && order.discount_amount > 0 && order.promo_code && (
+              <div className="flex justify-between text-sm text-red-600">
+                <span>Remise ({order.promo_code})</span>
+                <span>-{formatPrice(order.discount_amount)}</span>
+              </div>
+            )}
             {order.shipping_amount !== undefined && order.shipping_amount > 0 && (
               <div className="flex justify-between text-sm text-[#717182]">
                 <span>Livraison</span>

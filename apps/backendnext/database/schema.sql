@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS orders (
     tax_amount DECIMAL(10, 2) DEFAULT 0,
     shipping_amount DECIMAL(10, 2) DEFAULT 0,
     total_amount DECIMAL(10, 2) NOT NULL,
+    promo_code TEXT,
+    discount_amount DECIMAL(10, 2) DEFAULT 0,
     currency VARCHAR(3) DEFAULT 'TND',
     customer_email VARCHAR(255) NOT NULL,
     customer_name VARCHAR(255),
