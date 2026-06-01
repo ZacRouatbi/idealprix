@@ -21,37 +21,10 @@ export class SettingsService {
       return result.rows[0] as Settings
     }
     
-    // Return defaults
     return {
       language: 'en',
       currency: 'tnd',
       timezone: 'africa/tunis',
-    }
-  }
-
-  async updateSettings(userId: string, data: Partial<Settings>): Promise<Settings> {
-    const existing = await db.query('SELECT id FROM settings WHERE user_id = $1', [userId])
-    
-    if (existing.rows.length > 0) {
-      const result = await db.query(
-        `UPDATE settings SET 
-          language = $1, 
-          currency = $2, 
-          timezone = $3, 
-          updated_at = NOW() 
-         WHERE user_id = $4 
-         RETURNING *`,
-        [data.language || 'en', data.currency || 'tnd', data.timezone || 'africa/tunis', userId]
-      )
-      return result.rows[0] as Settings
-    } else {
-      const result = await db.query(
-        `INSERT INTO settings (id, user_id, language, currency, timezone) 
-         VALUES (gen_random_uuid(), $1, $2, $3, $4) 
-         RETURNING *`,
-        [userId, data.language || 'en', data.currency || 'tnd', data.timezone || 'africa/tunis']
-      )
-      return result.rows[0] as Settings
     }
   }
 
@@ -64,13 +37,11 @@ export class SettingsService {
 
     const user = result.rows[0]
     
-    // Verify current password
     const isValid = await bcrypt.compare(currentPassword, user.password_hash)
     if (!isValid) {
       throw new Error('Current password is incorrect')
     }
     
-    // Hash the new password
     const newPasswordHash = await bcrypt.hash(newPassword, 10)
     
     await db.query(

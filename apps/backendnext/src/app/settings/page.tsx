@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Save, Globe, Shield, Loader2, CheckCircle } from "lucide-react"
+import { Loader2, CheckCircle, Shield } from "lucide-react"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
@@ -38,7 +38,7 @@ async function updateSettings(data: any) {
 async function changePassword(currentPassword: string, newPassword: string) {
   const token = localStorage.getItem('token')
   const response = await fetch('/api/settings', {
-    method: 'PATCH',
+    method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}` 
