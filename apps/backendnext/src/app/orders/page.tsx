@@ -241,28 +241,37 @@ export default function OrdersPage() {
                  </div>
                )}
                
-<div className="border-t pt-2">
-                   <div className="flex justify-between items-center">
-                     {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.subtotal && (
-                       <>
-                         <span className="text-sm font-medium">Subtotal:</span>
-                         <span className="text-sm">{Number(selectedOrder.subtotal).toLocaleString("fr-TN")} TND</span>
-                       </>
-                     )}
-                   </div>
-                   {selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.promo_code && (
-                     <div className="flex justify-between items-center text-red-600">
-                       <span className="text-sm font-medium">Discount ({selectedOrder.promo_code}):</span>
-                       <span className="text-sm">-{Number(selectedOrder.discount_amount).toLocaleString("fr-TN")} TND</span>
-                     </div>
-                   )}
-                   <div className="flex justify-between items-center">
-                     <span className="text-sm font-medium">Total:</span>
-                     <span className="text-lg font-bold">
-                       {selectedOrder.total_amount.toLocaleString("fr-TN")} TND
-                     </span>
-                   </div>
-                 </div>
+{selectedOrder.discount_amount && Number(selectedOrder.discount_amount) > 0 && selectedOrder.promo_code ? (
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between items-center">
+                      {selectedOrder.subtotal && (
+                        <>
+                          <span className="text-sm font-medium">Subtotal:</span>
+                          <span className="text-sm">{Number(selectedOrder.subtotal).toLocaleString("fr-TN")} TND</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center text-red-600">
+                      <span className="text-sm font-medium">Discount ({selectedOrder.promo_code}):</span>
+                      <span className="text-sm">-{Number(selectedOrder.discount_amount).toLocaleString("fr-TN")} TND</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Total:</span>
+                      <span className="text-lg font-bold">
+                        {selectedOrder.total_amount.toLocaleString("fr-TN")} TND
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-t pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Total:</span>
+                      <span className="text-lg font-bold">
+                        {selectedOrder.total_amount.toLocaleString("fr-TN")} TND
+                      </span>
+                    </div>
+                  </div>
+                )}
                
                {selectedOrder.notes && (
                  <div className="border-t pt-2">

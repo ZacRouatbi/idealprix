@@ -26,6 +26,7 @@ export interface MedusaProduct {
   images?: { url: string }[]
   variants: MedusaProductVariant[]
   categories?: MedusaCategory[]
+  category_id?: string
   collection?: { id: string; title: string; handle: string }
   tags?: { id: string; value: string }[]
   metadata?: Record<string, unknown>
@@ -114,44 +115,53 @@ export async function fetchProducts(params: {
   }
 
 // Transform backend products to Medusa-like format
-  const medusaProducts = response.data.map(p => {
-    // Determine best applicable promotion (product-level wins over category-level)
-    const promo = promoByProduct.get(p.id) ?? (p.category_id ? promoByCategory.get(p.category_id) : undefined)
-    const basePrice = p.price ?? 0
-    let salePrice: number | undefined
-    if (promo && basePrice > 0) {
-      salePrice = promo.discountType === 'percentage'
-        ? Math.round(basePrice * (1 - promo.discountValue / 100))
-        : Math.max(0, basePrice - promo.discountValue)
-    }
-    return {
-       id: p.id,
-       title: p.name,
-       handle: p.slug,
-       description: p.description,
-       status: p.is_active ? 'published' : 'draft',
-       thumbnail: toAbsoluteUrl(p.image_url),
-       images: p.image_url ? [{ url: toAbsoluteUrl(p.image_url) }] : [{ url: placeholderImage }],
-       variants: basePrice ? [{
-         id: p.id,
-         title: 'Default',
-         prices: [{ amount: basePrice, currency_code: 'TND' }],
-         calculated_price: salePrice !== undefined ? { calculated_amount: salePrice } : undefined,
-         inventory_quantity: p.stock_quantity,
-       }] : [],
-       categories: p.category ? [{
-         id: p.category.id,
-         name: p.category.name,
-         handle: p.category.slug,
-       }] : [],
-       collection: undefined,
-       tags: [],
-       metadata: {},
-       created_at: p.created_at,
-       price: salePrice ?? basePrice,
-       compare_price: salePrice !== undefined ? basePrice : p.compare_price,
-      }
-   })
+   const medusaProducts = response.data.map(p => {
+     // Determine best applicable promotion (product-level wins over category-level)
+     // Use p.category_id or fall back to p.category?.id for category-level promo matching
+     const effectiveCategoryId = p.category_id ?? p.category?.id
+     const promo = promoByProduct.get(p.id) ?? (effectiveCategoryId ? promoByCategory.get(effectiveCategoryId) : undefined)
+     const basePrice = p.price ?? 0
+     let salePrice: number | undefined
+     if (promo && basePrice > 0) {
+       salePrice = promo.discountType === 'percentage'
+         ? Math.round(basePrice * (1 - promo.discountValue / 100))
+         : Math.max(0, basePrice - promo.discountValue)
+     }
+     const comparePrice = salePrice !== undefined ? basePrice : (p.compare_price ?? basePrice)
+     if (process.env.NODE_ENV === 'development') {
+       if (promo) {
+         console.debug('[backend-adapter] Product', p.id, 'has promo:', { promo, basePrice, salePrice, comparePrice })
+       }
+     }
+     return {
+        id: p.id,
+        title: p.name,
+        handle: p.slug,
+        description: p.description,
+        status: p.is_active ? 'published' : 'draft',
+        thumbnail: toAbsoluteUrl(p.image_url),
+        images: p.image_url ? [{ url: toAbsoluteUrl(p.image_url) }] : [{ url: placeholderImage }],
+        variants: basePrice ? [{
+          id: p.id,
+          title: 'Default',
+          prices: [{ amount: basePrice, currency_code: 'TND' }],
+          calculated_price: salePrice !== undefined ? { calculated_amount: salePrice } : undefined,
+          inventory_quantity: p.stock_quantity,
+        }] : [],
+        categories: p.category ? [{
+          id: p.category.id,
+          name: p.category.name,
+          handle: p.category.slug,
+        }] : [],
+        category_id: effectiveCategoryId,
+        collection: undefined,
+        tags: [],
+        metadata: {},
+        created_at: p.created_at,
+        price: salePrice ?? basePrice,
+        compare_price: comparePrice,
+       }
+    })
 
   return {
     products: medusaProducts,
@@ -170,9 +180,23 @@ export async function fetchProductByHandle(handle: string): Promise<MedusaProduc
     const product = response.data[0]
     if (!product) return null
 
-    // Find best applicable promotion
-    const promo = promotions.find(p => p.targetType === 'product' && p.targetId === product.id)
-      ?? promotions.find(p => p.targetType === 'category' && p.targetId === product.category_id)
+    // Build promotion lookup for consistency with fetchProducts
+    const promoByProduct = new Map<string, ActivePromotion>()
+    const promoByCategory = new Map<string, ActivePromotion>()
+    for (const promo of promotions) {
+      if (promo.targetType === 'product') {
+        promoByProduct.set(promo.targetId, promo)
+      } else if (promo.targetType === 'category') {
+        const existing = promoByCategory.get(promo.targetId)
+        if (!existing || promo.discountValue > existing.discountValue) {
+          promoByCategory.set(promo.targetId, promo)
+        }
+      }
+    }
+    
+    // Determine best applicable promotion (product-level wins over category-level)
+    const effectiveCategoryId = product.category_id ?? product.category?.id
+    const promo = promoByProduct.get(product.id) ?? (effectiveCategoryId ? promoByCategory.get(effectiveCategoryId) : undefined)
     const basePrice = product.price ?? 0
     let salePrice: number | undefined
     if (promo && basePrice > 0) {
@@ -201,12 +225,13 @@ export async function fetchProductByHandle(handle: string): Promise<MedusaProduc
       name: product.category.name,
       handle: product.category.slug,
     }] : [],
+    category_id: effectiveCategoryId,
     collection: undefined,
     tags: [],
     metadata: {},
     created_at: product.created_at,
     price: salePrice ?? basePrice,
-    compare_price: salePrice !== undefined ? basePrice : product.compare_price,
+    compare_price: salePrice !== undefined ? basePrice : (product.compare_price ?? basePrice),
   }
   } catch {
     return null

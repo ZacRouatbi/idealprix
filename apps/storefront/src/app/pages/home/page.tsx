@@ -1,5 +1,5 @@
 ﻿import { Link } from "react-router";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Grid3X3 } from "lucide-react";
 import { formatPrice, HERO_IMAGE } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
@@ -70,6 +70,18 @@ export default function HomePage() {
     image: cat.image?.url || HERO_IMAGE,
     count: counts[cat.handle] || 0,
   }));
+
+// Add this right after
+useEffect(() => {
+  console.log('Products in HomePage:', products.map(p => ({
+    id: p.id,
+    title: p.title,
+    price: p.price,
+    originalPrice: p.originalPrice,
+    isPromo: p.isPromo,
+    discountPercent: p.discountPercent
+  })));
+}, [products]);
   
   return (
     <main style={{ fontFamily: "Inter, sans-serif" }}>
@@ -102,7 +114,19 @@ export default function HomePage() {
 
 {/* Categories Carousel */}
       {!categoriesLoading && !countsLoading && enrichedCategories.length > 0 && (
-        <CategoryCarousel categories={enrichedCategories} />
+        <section className="bg-[#F0F3FA] w-full">
+          <div className="max-w-7xl mx-auto px-4 py-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full border border-[#E5E5E5] shadow-sm">
+                <Grid3X3 className="w-5 h-5 text-[#D4302A]" />
+              </div>
+              <h2 className="text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.25rem", fontWeight: 700 }}>
+                Nos catégories
+              </h2>
+            </div>
+            <CategoryCarousel categories={enrichedCategories} />
+          </div>
+        </section>
       )}
  
       {/* Popular products */}
