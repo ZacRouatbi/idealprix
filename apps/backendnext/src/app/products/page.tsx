@@ -16,10 +16,11 @@ const PAGE_SIZE = 10
 
 async function fetchProducts(page: number, limit: number) {
   const token = localStorage.getItem('token')
-  const offset = page * limit
-  const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`, {
+  const offset = (page) * limit
+  const response = await fetch(`/api/products?limit=${limit}&offset=${offset}&_=${Date.now()}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
     }
   })
   if (!response.ok) throw new Error("Failed to fetch products")
@@ -41,7 +42,6 @@ export default function ProductsPage() {
       queryClient.prefetchQuery({
         queryKey: ["products", page + 1],
         queryFn: () => fetchProducts(page + 1, PAGE_SIZE),
-        staleTime: 5 * 60 * 1000,
       })
     }
   }, [data, page, queryClient])

@@ -30,7 +30,11 @@ export async function GET(request: NextRequest) {
     }
 
     const products = await productService.listProducts(filters)
-    return NextResponse.json(products)
+    return NextResponse.json(products, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    })
   } catch (error) {
     console.error('Products error:', error)
     return NextResponse.json({ error: 'An error occurred' }, { status: 500 })
