@@ -255,8 +255,11 @@ export default function StorePage() {
     ? [...new Set(backendSubcategories.map(c => c.name))].sort()
     : availableSubcats;
 
-  const totalPages = Math.ceil(totalProductCount / PRODUCTS_PER_PAGE);
-  const displayedProducts = filteredProducts;
+const totalPages = Math.ceil(totalProductCount / PRODUCTS_PER_PAGE);
+   const displayedProducts = filteredProducts;
+   
+   // Show pagination only when there's more than 1 page worth of items
+   const showPagination = totalProductCount > PRODUCTS_PER_PAGE;
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const toggleCategory = (id: string) => {
@@ -365,14 +368,14 @@ export default function StorePage() {
                   Effacer les filtres
                 </button>
               </div>
-            ) : (
+) : (
               <>
-<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                   {displayedProducts.map((product) => (
-                     <ProductCard key={product.id} product={product} />
-                   ))}
-                 </div>
-                {totalPages > 1 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {displayedProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                {showPagination && (
                   <div className="flex items-center justify-center gap-2 mt-8">
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
