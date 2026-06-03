@@ -14,6 +14,9 @@ import { useCart } from "../../../lib/context/CartContext";
 import { useAuth } from "../../../lib/context/AuthContext";
 import { formatPrice } from "../../../lib/data/products";
 import { fetchShippingProviders, type ShippingProvider } from "../../../lib/data/backend-api";
+import { z } from "zod";
+
+const postalCodeSchema = z.string().regex(/^\d+$/, "Postal code must contain only numbers");
 
 type Step = 1 | 2 | 3 | 4;
 type PaymentMethod = "online" | "cod";
@@ -125,8 +128,12 @@ export default function CheckoutPage() {
     setError(null);
     setIsLoading(true);
     try {
-      if (!address.fullName || !address.email || !address.phone) {
+      if (!address.fullName || !address.email || !address.phone || !address.address || !address.city) {
         throw new Error("Please fill in all required fields.");
+      }
+      const postalCodeResult = postalCodeSchema.safeParse(address.postalCode);
+      if (!postalCodeResult.success) {
+        throw new Error(postalCodeResult.error.issues[0].message);
       }
       setCurrentStep(2);
     } catch (err: any) {

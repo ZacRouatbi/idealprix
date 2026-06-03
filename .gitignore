@@ -54,6 +54,8 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 **/.DS_Store
-#uploads 
-./apps/backendnext/public/uploads
-./apps/backendnext/scripts
+
+# Uploads
+apps/backendnext/public/uploads
+apps/backendnext/scripts
+apps/backendnext/src/db/migrations

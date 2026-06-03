@@ -21,3 +21,14 @@ export const resetPasswordSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+
+export const addressSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  phone: z.string().min(1, 'Phone is required'),
+  email: z.string().email('Invalid email address'),
+  address: z.string().min(1, 'Address is required'),
+  city: z.string().min(1, 'City is required'),
+  postalCode: z.string().regex(/^\d+$/, 'Postal code must contain only numbers'),
+})
+
+export type AddressInput = z.infer<typeof addressSchema>
