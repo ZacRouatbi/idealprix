@@ -12,9 +12,16 @@ interface AccountTemplateProps {
     phone?: string | null
   } | null
   orders?: BackendOrder[]
+  ordersLoading?: boolean
+  ordersPagination?: {
+    currentPage: number
+    totalPages: number
+    onPageChange: (page: number) => void
+    loadingPage?: number | null
+  }
 }
 
-export default function AccountTemplate({ customer, orders = [] }: AccountTemplateProps) {
+export default function AccountTemplate({ customer, orders = [], ordersPagination, ordersLoading }: AccountTemplateProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -203,9 +210,9 @@ export default function AccountTemplate({ customer, orders = [] }: AccountTempla
               <h2 className="font-bold text-lg text-gray-900">Mes commandes</h2>
             </div>
 
-            <div className="p-6">
-              <OrdersList orders={orders} />
-            </div>
+<div className="p-6">
+               <OrdersList orders={orders} isLoading={ordersLoading} pagination={ordersPagination} />
+             </div>
           </div>
         </div>
       </div>

@@ -5,11 +5,18 @@ import AccountTemplate from "@modules/account/templates";
 import { fetchCustomerOrders } from "@lib/data/backend-api";
 import type { Order } from "@lib/data/backend-api";
 
+const ORDERS_PER_PAGE = 5;
+
 export default function AccountDashboardPage() {
   const { customer, isLoading, token } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingPage, setLoadingPage] = useState<number | null>(null);
+  const [prefetchedOrders, setPrefetchedOrders] = useState<Record<number, Order[]>>({});
 
   useEffect(() => {
     if (!isLoading && !token) {
@@ -17,13 +24,56 @@ export default function AccountDashboardPage() {
     }
   }, [isLoading, token, navigate]);
 
+  const loadOrders = async (page: number) => {
+    if (!token) return null;
+
+    const offset = (page - 1) * ORDERS_PER_PAGE;
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:3000/api"}/orders/customer?limit=${ORDERS_PER_PAGE}&offset=${offset}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      return { orders: data.data || [], totalPages: data.totalPages, count: data.count };
+    }
+    return null;
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
+    const initOrders = async () => {
       if (!token) return;
-      setOrdersLoading(true);
+      
       try {
-        const data = await fetchCustomerOrders(token);
-        setOrders(data.data || []);
+        const data = await fetchCustomerOrders(token, {
+          limit: ORDERS_PER_PAGE,
+          offset: 0,
+        });
+
+        setOrders(data.data);
+        setTotalPages(data.totalPages);
+        setTotalCount(data.count);
+
+        if (data.totalPages > 1 && data.data.length === ORDERS_PER_PAGE) {
+          const nextOffset = ORDERS_PER_PAGE;
+          fetch(
+            `${import.meta.env.VITE_BACKEND_API_URL || "http://localhost:3000/api"}/orders/customer?limit=${ORDERS_PER_PAGE}&offset=${nextOffset}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          )
+            .then((res) => res.json())
+            .then((nextData) => {
+              if (nextData.data) {
+                setPrefetchedOrders((prev) => ({ ...prev, 2: nextData.data }));
+              }
+            })
+            .catch(() => {});
+        }
       } catch (err) {
         console.error("Failed to fetch orders:", err);
         setOrders([]);
@@ -33,9 +83,33 @@ export default function AccountDashboardPage() {
     };
 
     if (token) {
-      fetchOrders();
+      initOrders();
     }
   }, [token]);
+
+  const handlePageChange = async (page: number) => {
+    if (!token) return;
+
+    if (prefetchedOrders[page]) {
+      setOrders(prefetchedOrders[page]);
+      setCurrentPage(page);
+    } else {
+      setLoadingPage(page);
+      try {
+        const result = await loadOrders(page);
+        if (result) {
+          setOrders(result.orders);
+          setTotalPages(result.totalPages);
+          setTotalCount(result.count);
+          setCurrentPage(page);
+        }
+      } catch (err) {
+        console.error("Failed to load page:", err);
+      } finally {
+        setLoadingPage(null);
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -52,7 +126,6 @@ export default function AccountDashboardPage() {
     return null;
   }
 
-  // Adapt Order to BackendOrder format for AccountTemplate
   const adaptedOrders = orders.map((order) => ({
     id: order.id,
     order_number: order.order_number,
@@ -75,5 +148,17 @@ export default function AccountDashboardPage() {
     })) ?? [],
   }));
 
-  return <AccountTemplate customer={customer} orders={adaptedOrders} />;
+  return (
+    <AccountTemplate
+      customer={customer}
+      orders={adaptedOrders}
+      ordersPagination={{
+        currentPage,
+        totalPages,
+        onPageChange: handlePageChange,
+        loadingPage,
+      }}
+      ordersLoading={ordersLoading}
+    />
+  );
 }

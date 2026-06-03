@@ -264,17 +264,29 @@ export async function updateCustomer(userData: {
   })
 }
 
-export async function fetchCustomerOrders(token: string, params?: {
-  limit?: number
-  offset?: number
-  status?: string
-}): Promise<{ data: Order[]; count: number; totalPages: number }> {
+export interface PaginatedOrdersResponse {
+  data: Order[]
+  count: number
+  limit: number
+  offset: number
+  page: number
+  totalPages: number
+}
+
+export async function fetchCustomerOrders(
+  token: string,
+  params?: {
+    limit?: number
+    offset?: number
+    status?: string
+  }
+): Promise<PaginatedOrdersResponse> {
   const qs = new URLSearchParams()
   if (params?.limit) qs.set('limit', String(params.limit))
   if (params?.offset) qs.set('offset', String(params.offset))
   if (params?.status) qs.set('status', params.status)
 
-  return apiClient<{ data: Order[]; count: number; totalPages: number }>(
+  return apiClient<PaginatedOrdersResponse>(
     `/orders/customer?${qs.toString()}`,
     { token }
   )

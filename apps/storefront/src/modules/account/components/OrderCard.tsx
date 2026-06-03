@@ -223,9 +223,15 @@ export function OrderCard({ order }: OrderCardProps) {
 interface OrdersListProps {
   orders: BackendOrder[]
   isLoading?: boolean
+  pagination?: {
+    currentPage: number
+    totalPages: number
+    onPageChange: (page: number) => void
+    loadingPage?: number | null
+  }
 }
 
-export default function OrdersList({ orders, isLoading }: OrdersListProps) {
+export default function OrdersList({ orders, isLoading, pagination }: OrdersListProps) {
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -260,10 +266,49 @@ export default function OrdersList({ orders, isLoading }: OrdersListProps) {
   }
 
   return (
-    <div className="space-y-3">
-      {orders.map((order) => (
-        <OrderCard key={order.id} order={order} />
-      ))}
+    <div>
+      <div className="space-y-3">
+        {orders.map((order) => (
+          <OrderCard key={order.id} order={order} />
+        ))}
+      </div>
+      
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button
+            onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+            disabled={pagination.currentPage <= 1}
+            className="px-3 py-2 border border-[#E8E6E1] rounded-lg text-sm font-medium text-[#717182] hover:bg-[#F9F8F7] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Précédent
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => pagination.onPageChange(page)}
+                disabled={pagination.loadingPage === page}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  page === pagination.currentPage
+                    ? "bg-red-600 text-white"
+                    : "border border-[#E8E6E1] text-[#717182] hover:bg-[#F9F8F7]"
+                }`}
+              >
+                {pagination.loadingPage === page ? "..." : page}
+              </button>
+            ))}
+          </div>
+          
+          <button
+            onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+            disabled={pagination.currentPage >= pagination.totalPages}
+            className="px-3 py-2 border border-[#E8E6E1] rounded-lg text-sm font-medium text-[#717182] hover:bg-[#F9F8F7] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
     </div>
   )
 }
