@@ -1,12 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams, Link } from "react-router";
-import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle, ChevronRight as ChevronRightIcon } from "lucide-react";
-import { formatPrice } from "../../../lib/data/products";
-import { useProducts } from "../../../lib/hooks/use-products";
+import { ChevronRight, SlidersHorizontal, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { useCategories } from "../../../lib/hooks/use-categories";
-import { fetchProducts, fetchCategories, fetchSubcategories } from "../../../lib/data/backend-adapter";
+import { fetchProducts, fetchCategories, normaliseProduct } from "../../../lib/data/backend-adapter";
 import ProductCard from "../../../modules/store/components/ProductCard";
 import FilterSidebar from "../../../modules/store/components/FilterSidebar";
+import type { Product } from "../../../lib/data/products";
 
 type FilterState = {
   subcategories: string[];
@@ -23,17 +22,20 @@ const SORT_OPTIONS = [
   { value: "name", label: "Nom A-Z" },
 ];
 
+const PRODUCTS_PER_ROW = 4;
+const MAX_ROWS = 5;
+const PRODUCTS_PER_PAGE = PRODUCTS_PER_ROW * MAX_ROWS; // 20 products per page (5 rows)
+
 export default function StorePage() {
   const [searchParams] = useSearchParams();
   const [filters, setFilters] = useState<FilterState>({
     subcategories: [],
     brands: [],
     minPrice: 0,
-    maxPrice: 200000, // will be adjusted to product max after fetch
+    maxPrice: 200000,
     promoOnly: false,
   });
 
-  // Price slider limit derived from ALL backend products to avoid unintentionally filtering out expensive items
   const [priceLimit, setPriceLimit] = useState<number>(200000);
 
   useEffect(() => {
@@ -42,14 +44,12 @@ export default function StorePage() {
       try {
         const all = await fetchProducts({ limit: 200 });
         if (!mounted) return;
-        // Compute the highest price across all variants and their price entries
         const max = (all.products || []).reduce((acc, p) => {
           const prices = (p.variants || []).flatMap((v) => (v.prices || []).map((pr) => pr.amount ?? 0));
           const localMax = prices.length > 0 ? Math.max(...prices) : 0;
           return Math.max(acc, localMax);
         }, 200000);
         setPriceLimit(max);
-        // If user has default cap, expand it to backend max
         setFilters((prev) => ({ ...prev, maxPrice: prev.maxPrice === 200000 ? max : prev.maxPrice }));
       } catch (e) {
         console.debug("[store-page] deriveLimitFromBackend failed", e);
@@ -60,20 +60,17 @@ export default function StorePage() {
   }, []);
   const [sortBy, setSortBy] = useState("default");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [showMore, setShowMore] = useState(false);
 
   const categoryParam = searchParams.get("category");
   const searchQuery = searchParams.get("q");
   const promoParam = searchParams.get("promo");
 
-  // Keep filters.promoOnly in sync with URL param
   useEffect(() => {
     setFilters((prev) => ({ ...prev, promoOnly: searchParams.get("promo") === "true" }));
   }, [searchParams]);
 
   const { subcategories: backendSubcategories } = useCategories(6, categoryParam || undefined);
 
-  // Build subcategory ID map for filtering
   const [subcategoryIds, setSubcategoryIds] = useState<Record<string, string[]>>({});
   
   useEffect(() => {
@@ -90,7 +87,6 @@ export default function StorePage() {
     });
   }, []);
 
-  // Get all category IDs (parent + subcategories) when categoryParam is a parent
   const [allCategoryIds, setAllCategoryIds] = useState<string[]>([]);
   
   useEffect(() => {
@@ -98,10 +94,8 @@ export default function StorePage() {
       setAllCategoryIds([]);
       return;
     }
-    // Get category handle and subcategories using backend adapter
     (async () => {
       try {
-        // Find the category by handle - categories have handle property from backend adapter
         const allCats = await fetchCategories();
         const cat = allCats.find(c => c.handle === categoryParam);
         if (cat) {
@@ -117,36 +111,71 @@ export default function StorePage() {
   }, [categoryParam, subcategoryIds]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 12;
-  const { products, total, loading, error } = useProducts({
-    limit: productsPerPage,
-    offset: (currentPage - 1) * productsPerPage,
-    ...(allCategoryIds.length > 0 ? { category_id: allCategoryIds } : categoryParam ? { category_handle: [categoryParam] } : {}),
-  });
+  const [prefetchedProducts, setPrefetchedProducts] = useState<Record<number, Product[]>>({});
+  const [prefetchedTotal, setPrefetchedTotal] = useState<Record<number, number>>({});
+  const [loadedProducts, setLoadedProducts] = useState<Product[]>([]);
+  const [totalProductCount, setTotalProductCount] = useState(0);
+  const [loadingPage, setLoadingPage] = useState<number | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Runtime diagnostic: compare all backend products vs the list returned with current filters
-  useEffect(() => {
-    let mounted = true;
-    async function compare() {
-      try {
-        const all = await fetchProducts({ limit: 100 });
-        if (!mounted) return;
-        const allIds = (all.products || []).map((p) => p.id);
-        const shownIds = products.map((p) => p.id);
-        const missing = allIds.filter((id) => !shownIds.includes(id));
-        if (missing.length > 0) {
-          console.warn("[store-page] products present in backend but not shown in storefront list:", missing, { allCount: all.count, shownCount: shownIds.length });
-        } else {
-          console.debug("[store-page] all backend products are shown (count)", allIds.length);
-        }
-      } catch (e) {
-        console.debug("[store-page] compare failed", e);
+  const loadProductsForPage = useCallback(async (page: number, categoryIds: string[] = []) => {
+    const offset = (page - 1) * PRODUCTS_PER_PAGE;
+    
+    try {
+      const params: Record<string, any> = { limit: PRODUCTS_PER_PAGE, offset };
+      if (categoryIds.length > 0) {
+        params.category_id = categoryIds;
       }
+      
+      const response = await fetchProducts(params);
+      const normalised = response.products.map(normaliseProduct);
+      
+      if (page === 1) {
+        setLoadedProducts(normalised);
+        setTotalProductCount(response.count);
+      }
+      
+      setPrefetchedProducts(prev => ({ ...prev, [page]: normalised }));
+      setPrefetchedTotal(prev => ({ ...prev, [page]: response.count }));
+      return { products: normalised, total: response.count };
+    } catch (err: any) {
+      console.debug("[store-page] load failed", err);
+      setErrorMsg(err.message || "Erreur lors du chargement des produits");
+      return null;
     }
-    // Run after products resolved
-    if (!loading) compare();
-    return () => { mounted = false; };
-  }, [loading, products]);
+  }, []);
+
+  // Flag to track if initial load has completed
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
+  // Load products when component mounts or category changes
+  useEffect(() => {
+    // Clear prefetch cache when category changes
+    setPrefetchedProducts({});
+    setLoadedProducts([]);
+    setTotalProductCount(0);
+    setCurrentPage(1);
+    setInitialLoadDone(false);
+    loadProductsForPage(1, allCategoryIds).then(() => {
+      setInitialLoadDone(true);
+    });
+  }, [allCategoryIds]);
+
+  // Prefetch page 2 after initial load completes
+  useEffect(() => {
+    if (initialLoadDone && totalProductCount > PRODUCTS_PER_PAGE && !prefetchedProducts[2]) {
+      // Fire and forget prefetch
+      loadProductsForPage(2, allCategoryIds);
+    }
+  }, [initialLoadDone, totalProductCount, allCategoryIds, loadProductsForPage]);
+
+  // Get products for current page
+  const products = useMemo(() => {
+    if (currentPage === 1) return loadedProducts;
+    return prefetchedProducts[currentPage] || [];
+  }, [currentPage, loadedProducts, prefetchedProducts]);
+
+  const isLoadingInitial = !initialLoadDone;
 
   const pageTitle = useMemo(() => {
     if (promoParam === "true") return "Promotions";
@@ -154,25 +183,6 @@ export default function StorePage() {
     if (categoryParam) return categoryParam.charAt(0).toUpperCase() + categoryParam.slice(1).replace(/-/g, " ");
     return "Tous les produits";
   }, [categoryParam, searchQuery, promoParam]);
-
-  // Derive filter options from live products
-  const availableBrands = useMemo(
-    () => [...new Set(products.map((p) => p.brand).filter(Boolean))].sort(),
-    [products]
-  );
-  const availableSubcats = useMemo(
-    () => [...new Set(products.map((p) => p.subcategory).filter(Boolean) as string[])].sort(),
-    [products]
-  );
-  
-  // Build category hierarchy for foldable menu
-  const [categoryHierarchy, setCategoryHierarchy] = useState<Record<string, { id: string; name: string; handle: string; children: { id: string; name: string; handle: string }[] }>>({});
-  
-  
-
-  const availableSubcategories = backendSubcategories.length > 0 
-    ? [...new Set(backendSubcategories.map(c => c.name))].sort()
-    : availableSubcats;
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -207,7 +217,6 @@ export default function StorePage() {
       result = result.filter((p) => p.isPromo);
     }
 
-    // Sort by selected criteria
     switch (sortBy) {
       case "price-asc":
         result.sort((a, b) => a.price - b.price);
@@ -220,7 +229,6 @@ export default function StorePage() {
         break;
       case "created_at":
       default:
-        // Sort by creation date (newest first)
         result.sort((a, b) => {
           const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -232,8 +240,23 @@ export default function StorePage() {
     return result;
   }, [products, filters, sortBy, searchQuery]);
 
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-  const displayed = filteredProducts.slice(0, currentPage * productsPerPage);
+  const availableBrands = useMemo(
+    () => [...new Set(filteredProducts.map((p) => p.brand).filter(Boolean))].sort(),
+    [filteredProducts]
+  );
+  const availableSubcats = useMemo(
+    () => [...new Set(filteredProducts.map((p) => p.subcategory).filter(Boolean) as string[])].sort(),
+    [filteredProducts]
+  );
+  
+  const [categoryHierarchy, setCategoryHierarchy] = useState<Record<string, { id: string; name: string; handle: string; children: { id: string; name: string; handle: string }[] }>>({});
+
+  const availableSubcategories = backendSubcategories.length > 0 
+    ? [...new Set(backendSubcategories.map(c => c.name))].sort()
+    : availableSubcats;
+
+  const totalPages = Math.ceil(totalProductCount / PRODUCTS_PER_PAGE);
+  const displayedProducts = filteredProducts;
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const toggleCategory = (id: string) => {
@@ -245,25 +268,35 @@ export default function StorePage() {
     });
   };
 
+  const handlePageChange = (page: number) => {
+    if (prefetchedProducts[page]) {
+      setCurrentPage(page);
+    } else {
+      setLoadingPage(page);
+      loadProductsForPage(page, allCategoryIds).then((result) => {
+        setLoadingPage(null);
+        if (result) {
+          setCurrentPage(page);
+        }
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F0F3FA]" style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm text-[#717182] mb-5">
           <Link to="/" className="hover:text-[#D4302A] transition-colors">Accueil</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-[#1E1E1E] font-medium">{pageTitle}</span>
         </nav>
 
-        
-
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.5rem", fontWeight: 700 }}>
               {pageTitle}
             </h1>
-            {!loading && (
+            {!isLoadingInitial && (
               <p className="text-sm text-[#717182] mt-0.5">
                 {filteredProducts.length} produit{filteredProducts.length !== 1 ? "s" : ""} trouvé{filteredProducts.length !== 1 ? "s" : ""}
               </p>
@@ -296,16 +329,7 @@ export default function StorePage() {
           </div>
         </div>
 
-        {/* Error state */}
-        {error && (
-          <div className="flex items-center gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 mb-6">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>Impossible de charger les produits depuis le serveur. Vérifiez que le backend Medusa est démarré.</span>
-          </div>
-        )}
-
         <div className="flex gap-6">
-          {/* Sidebar */}
           <aside className="hidden sm:block w-64 flex-shrink-0">
             <FilterSidebar
               filters={filters}
@@ -316,13 +340,22 @@ export default function StorePage() {
             />
           </aside>
 
-          {/* Grid */}
           <div className="flex-1 min-w-0">
-            {loading ? (
+            {errorMsg && (
+              <div className="flex items-center gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 mb-6">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+            {isLoadingInitial ? (
               <div className="flex items-center justify-center py-24">
                 <Loader2 className="w-8 h-8 text-[#D4302A] animate-spin" />
               </div>
-            ) : filteredProducts.length === 0 ? (
+            ) : loadingPage === currentPage ? (
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="w-8 h-8 text-[#D4302A] animate-spin" />
+              </div>
+            ) : displayedProducts.length === 0 ? (
               <div className="text-center py-20">
                 <p className="text-[#717182] text-lg">Aucun produit trouvé.</p>
                 <button
@@ -334,24 +367,45 @@ export default function StorePage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {displayed.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
+<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                   {displayedProducts.map((product) => (
+                     <ProductCard key={product.id} product={product} />
+                   ))}
+                 </div>
                 {totalPages > 1 && (
-                  <div className="flex justify-center mt-8 gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setCurrentPage(p)}
-                        className={`px-3 py-1 rounded ${
-                          currentPage === p ? "bg-[#D4302A] text-white" : "bg-gray-200"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-center gap-2 mt-8">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage <= 1}
+                      className="px-4 py-2 border border-[#E5E5E5] rounded-lg text-sm font-medium text-[#717182] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Précédent
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          disabled={loadingPage === page}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            page === currentPage
+                              ? "bg-[#D4302A] text-white"
+                              : "border border-[#E5E5E5] text-[#717182] hover:bg-gray-50"
+                          }`}
+                        >
+                          {loadingPage === page ? "..." : page}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage >= totalPages}
+                      className="px-4 py-2 border border-[#E5E5E5] rounded-lg text-sm font-medium text-[#717182] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Suivant
+                    </button>
                   </div>
                 )}
               </>
@@ -360,19 +414,18 @@ export default function StorePage() {
         </div>
       </div>
 
-      {/* Mobile filter overlay */}
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-50 sm:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileFilterOpen(false)} />
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] overflow-y-auto p-4">
-<FilterSidebar
-               filters={filters}
-               onFilterChange={setFilters}
-               onClose={() => setMobileFilterOpen(false)}
-               isMobile
-               availableBrands={availableBrands}
-               availableSubcategories={availableSubcategories}
-             />
+            <FilterSidebar
+              filters={filters}
+              onFilterChange={setFilters}
+              onClose={() => setMobileFilterOpen(false)}
+              isMobile
+              availableBrands={availableBrands}
+              availableSubcategories={availableSubcategories}
+            />
           </div>
         </div>
       )}

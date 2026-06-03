@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   }
 
   const searchParams = request.nextUrl.searchParams
-  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '50')), 100)
+  const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '50')), 200)
   const offset = Math.max(0, parseInt(searchParams.get('offset') || '0'))
   
   const categoryIds = searchParams.get('category_id') || undefined
@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
     limit,
     offset,
     search: searchParams.get('search') || undefined,
-    category_id: categoryIds,
     is_active: true,
+    category_id: categoryIds ? categoryIds.split(',') : undefined,
   }
   
   const slug = searchParams.get('slug')
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           ...corsHeaders,
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
           'X-Total-Count': result.count.toString(),
           'X-Page': result.page.toString(),
           'X-Total-Pages': result.totalPages.toString(),

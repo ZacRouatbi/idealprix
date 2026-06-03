@@ -33,7 +33,7 @@ export interface Product {
 }
 
 export interface ProductFilters extends FilterParams {
-  category_id?: string
+  category_id?: string | string[]
   is_active?: boolean
   is_featured?: boolean
   min_price?: number
@@ -61,7 +61,7 @@ export class ProductService {
    * Uses cursor-based pagination when cursor is provided
    */
   async listProducts(filters?: ProductFilters & { cursor?: string }): Promise<PaginatedResponse<Product>> {
-    const limit = Math.max(1, Math.min(100, filters?.limit || 50))
+    const limit = Math.max(1, Math.min(200, filters?.limit || 50))
     const offset = Math.max(0, filters?.offset || 0)
 
     let baseQuery = `
@@ -86,8 +86,10 @@ export class ProductService {
 
     // If category_id is provided, also include products from subcategories
     if (filters?.category_id) {
-      const subcategoryIds = await getSubcategoryIds(filters.category_id)
-      const allCategoryIds = [filters.category_id, ...subcategoryIds]
+      const categoryIds = Array.isArray(filters.category_id) ? filters.category_id : [filters.category_id]
+      const subcategoryIdPromises = categoryIds.map(id => getSubcategoryIds(id))
+      const allSubcategoryIds = (await Promise.all(subcategoryIdPromises)).flat()
+      const allCategoryIds = [...new Set([...categoryIds, ...allSubcategoryIds])]
       conditions.push(`p.category_id = ANY($${paramIndex++})`)
       params.push(allCategoryIds)
     }
@@ -120,8 +122,8 @@ export class ProductService {
       baseQuery += ' WHERE ' + conditions.join(' AND ')
     }
 
-    // Use indexed ordering
-    baseQuery += ` ORDER BY p.id DESC LIMIT ${limit + 1}`
+    // Use indexed ordering with OFFSET for pagination
+    baseQuery += ` ORDER BY p.id DESC LIMIT ${limit + 1} OFFSET ${offset}`
 
     const result = await db.query(baseQuery, params)
 
@@ -160,7 +162,7 @@ export class ProductService {
       const countQuery = `
         SELECT COUNT(*) as count 
         FROM (
-          ${baseQuery.replace(` ORDER BY p.id DESC LIMIT ${limit + 1}`, '')}
+          ${baseQuery.replace(/ ORDER BY p\.id DESC LIMIT \d+ OFFSET \d+/, '')}
         ) subquery
       `
       const countResult = await db.query(countQuery, params)

@@ -65,23 +65,26 @@ export interface Product {
 }
 
 export async function fetchProducts(params?: {
-  limit?: number
-  offset?: number
-  search?: string
-  category_id?: string
-  slug?: string
-  is_active?: boolean
-}): Promise<{ data: Product[]; count: number; totalPages: number }> {
-  const qs = new URLSearchParams()
-  if (params?.limit) qs.set('limit', String(params.limit))
-  if (params?.offset) qs.set('offset', String(params.offset))
-  if (params?.search) qs.set('search', params.search)
-  if (params?.category_id) qs.set('category_id', params.category_id)
-  if (params?.slug) qs.set('slug', params.slug)
-  if (params?.is_active !== undefined) qs.set('is_active', String(params.is_active))
+   limit?: number
+   offset?: number
+   search?: string
+   category_id?: string | string[]
+   slug?: string
+   is_active?: boolean
+ }): Promise<{ data: Product[]; count: number; totalPages: number }> {
+   const qs = new URLSearchParams()
+   if (params?.limit) qs.set('limit', String(params.limit))
+   if (params?.offset) qs.set('offset', String(params.offset))
+   if (params?.search) qs.set('search', params.search)
+   if (params?.category_id) {
+     const ids = Array.isArray(params.category_id) ? params.category_id.join(',') : params.category_id
+     qs.set('category_id', ids)
+   }
+   if (params?.slug) qs.set('slug', params.slug)
+   if (params?.is_active !== undefined) qs.set('is_active', String(params.is_active))
 
-  return apiClient<{ data: Product[]; count: number; totalPages: number }>(`/public/products?${qs.toString()}`)
-}
+   return apiClient<{ data: Product[]; count: number; totalPages: number }>(`/public/products?${qs.toString()}`)
+ }
 
 export async function fetchProduct(id: string, token?: string): Promise<Product> {
   return apiClient(`/products/${id}`, { token })
