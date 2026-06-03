@@ -141,6 +141,7 @@ export default function ProductPage() {
                 src={images[selectedImage]}
                 alt={product.title}
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
               {images.length > 1 && (
                 <>
@@ -169,7 +170,7 @@ export default function ProductPage() {
                       selectedImage === i ? "border-[#D4302A]" : "border-[#E5E5E5] hover:border-[#1E1E1E]"
                     }`}
                   >
-                    <img src={img} alt={`${product.title} ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`${product.title} ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
                   </button>
                 ))}
               </div>

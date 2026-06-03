@@ -214,7 +214,7 @@ export default function ProductNewPage() {
                 <Label>Product Image</Label>
                 <div className="flex items-center gap-4">
                   {imagePreview && (
-                    <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded" />
+                    <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded" loading="lazy" />
                   )}
                   <Input
                     id="image"

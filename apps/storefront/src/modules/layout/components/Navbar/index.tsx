@@ -149,6 +149,7 @@ export default function Navbar() {
                             src={product.image}
                             alt={product.title}
                             className="w-12 h-12 object-cover rounded"
+                            loading="lazy"
                           />
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-medium text-gray-900 truncate">

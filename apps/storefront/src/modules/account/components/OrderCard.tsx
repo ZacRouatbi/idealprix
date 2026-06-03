@@ -144,6 +144,7 @@ export function OrderCard({ order }: OrderCardProps) {
                           src={item.product_image}
                           alt={item.product_name}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">

@@ -89,6 +89,7 @@ export default function CartPage() {
                       src={product.image}
                       alt={product.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   </div>
                 </Link>

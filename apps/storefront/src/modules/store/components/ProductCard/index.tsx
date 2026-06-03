@@ -18,6 +18,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           src={product.image}
           alt={product.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
         />
         {isOnSale && (
           <div className="absolute top-2 left-2 bg-[#D4302A] text-white text-xs font-bold px-2 py-0.5 rounded">

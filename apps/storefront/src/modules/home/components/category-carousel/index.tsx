@@ -84,6 +84,7 @@ export default function CategoryCarousel({ categories }: CategoryCarouselProps) 
                         src={cat.image}
                         alt={cat.title}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <h3 className="absolute bottom-3 left-4 font-semibold text-white text-lg" style={{ fontFamily: "Poppins, sans-serif" }}>

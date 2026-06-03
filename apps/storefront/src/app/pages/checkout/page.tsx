@@ -589,7 +589,7 @@ export default function CheckoutPage() {
                 {cart.items.map(({ product, quantity }) => (
                   <div key={product.id} className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-[#F9F8F7] rounded-lg overflow-hidden border border-[#E5E5E5] flex-shrink-0">
-                      <img src={(product as any).image} alt={product.title} className="w-full h-full object-cover" />
+                      <img src={(product as any).image} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-[#1E1E1E] font-medium truncate">{product.title}</p>

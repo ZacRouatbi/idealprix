@@ -1,5 +1,5 @@
 ﻿import { Link } from "react-router";
-import { ArrowRight, Loader2, Grid3X3 } from "lucide-react";
+import { ArrowRight, Loader2, Grid3X3, Star } from "lucide-react";
 import { formatPrice, HERO_IMAGE } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
@@ -140,9 +140,14 @@ export default function HomePage() {
       <section className="bg-white">
         <div className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.25rem", fontWeight: 700 }}>
-              Produits populaires
-            </h2>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full border border-[#E5E5E5] shadow-sm">
+                <Star className="w-5 h-5 text-[#D4302A]" />
+              </div>
+              <h2 className="text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.25rem", fontWeight: 700 }}>
+                Produits populaires
+              </h2>
+            </div>
             <Link to="/products" className="text-sm text-[#D4302A] hover:underline font-medium flex items-center gap-1">
               Voir tout <ArrowRight className="w-3.5 h-3.5" />
             </Link>
