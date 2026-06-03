@@ -1,20 +1,32 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Sidebar } from "@/components/sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import { useAuth } from "@/lib/context/auth-context"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useEffect } from "react"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const isLoginPage = pathname === "/login"
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
+
+  useEffect(() => {
+    if (!isLoading && !user && !isLoginPage) {
+      router.push("/login")
+    }
+  }, [isLoading, user, isLoginPage, router])
 
   if (isLoginPage) {
     return <>{children}</>
+  }
+
+  if (isLoading || !user) {
+    return null
   }
 
   return (
