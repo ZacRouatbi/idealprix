@@ -341,5 +341,88 @@ variants: p.variants?.map((v) => ({
        price: v.calculated_price?.calculated_amount ?? v.prices?.[0]?.amount ?? comparePrice,
      })) ?? [],
     createdAt: p.created_at,
+  } 
+}
+/* ─── Fetch only promoted products ─── */
+export async function fetchPromoProducts(limit: number = 4): Promise<MedusaProduct[]> {
+  try {
+    // Get active promotions and all products in parallel
+    const [promotions, allProductsResponse] = await Promise.all([
+      fetchActivePromotions(),
+      apiFetchProducts({ limit: 5000, is_active: true }) // Fetch all active products
+    ])
+
+    if (!promotions.length || !allProductsResponse.data.length) {
+      return []
+    }
+
+    // Build maps for quick lookup
+    const promoByProduct = new Map<string, ActivePromotion>()
+    const promoByCategory = new Map<string, ActivePromotion>()
+
+    for (const promo of promotions) {
+      if (promo.targetType === 'product') {
+        promoByProduct.set(promo.targetId, promo)
+      } else if (promo.targetType === 'category') {
+        const existing = promoByCategory.get(promo.targetId)
+        if (!existing || promo.discountValue > existing.discountValue) {
+          promoByCategory.set(promo.targetId, promo)
+        }
+      }
+    }
+
+    // Filter and transform promoted products
+    const promoProducts = allProductsResponse.data
+      .filter(p => {
+        const effectiveCategoryId = p.category_id ?? p.category?.id
+        return promoByProduct.has(p.id) || (effectiveCategoryId ? promoByCategory.has(effectiveCategoryId) : false)
+      })
+      .slice(0, limit)
+      .map(p => {
+        const effectiveCategoryId = p.category_id ?? p.category?.id
+        const promo = promoByProduct.get(p.id) ?? (effectiveCategoryId ? promoByCategory.get(effectiveCategoryId) : undefined)
+        const basePrice = p.price ?? 0
+        let salePrice: number | undefined
+        if (promo && basePrice > 0) {
+          salePrice = promo.discountType === 'percentage'
+            ? Math.round(basePrice * (1 - promo.discountValue / 100))
+            : Math.max(0, basePrice - promo.discountValue)
+        }
+        const comparePrice = salePrice !== undefined ? basePrice : (p.compare_price ?? basePrice)
+
+        return {
+          id: p.id,
+          title: p.name,
+          handle: p.slug,
+          description: p.description,
+          status: p.is_active ? 'published' : 'draft',
+          thumbnail: toAbsoluteUrl(p.image_url),
+          images: p.image_url ? [{ url: toAbsoluteUrl(p.image_url) }] : [{ url: placeholderImage }],
+          variants: basePrice ? [{
+            id: p.id,
+            title: 'Default',
+            prices: [{ amount: basePrice, currency_code: 'TND' }],
+            calculated_price: salePrice !== undefined ? { calculated_amount: salePrice } : undefined,
+            inventory_quantity: p.stock_quantity,
+          }] : [],
+          categories: p.category ? [{
+            id: p.category.id,
+            name: p.category.name,
+            handle: p.category.slug,
+          }] : [],
+          category_id: effectiveCategoryId,
+          collection: undefined,
+          tags: [],
+          metadata: {},
+          created_at: p.created_at,
+          price: salePrice ?? basePrice,
+          compare_price: comparePrice,
+        }
+      })
+
+    return promoProducts
+  } catch (error) {
+    console.error('Error fetching promo products:', error)
+    return []
   }
 }

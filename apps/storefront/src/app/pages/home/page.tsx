@@ -3,14 +3,17 @@ import { ArrowRight, Loader2, Grid3X3 } from "lucide-react";
 import { formatPrice, HERO_IMAGE } from "../../../lib/data/products";
 import { useProducts } from "../../../lib/hooks/use-products";
 import { useCategories } from "../../../lib/hooks/use-categories";
-import { fetchCategories, fetchProducts } from "../../../lib/data/backend-adapter";
+import { fetchCategories, fetchProducts, fetchPromoProducts, normaliseProduct } from "../../../lib/data/backend-adapter";
 import { useEffect, useState } from "react";
 import ProductCard from "../../../modules/store/components/ProductCard";
 import CategoryCarousel from "../../../modules/home/components/category-carousel";
+import type { Product as StorefrontProduct } from "../../../lib/data/products";
 
 export default function HomePage() {
   const { products, loading } = useProducts({ limit: 8 });
   const { categories, loading: categoriesLoading } = useCategories(100);
+  const [promoProducts, setPromoProducts] = useState<StorefrontProduct[]>([]);
+  const [promoLoading, setPromoLoading] = useState(true);
 
   const popularProducts = products
     .filter((p) => p.inStock)
@@ -20,7 +23,23 @@ export default function HomePage() {
       return dateB - dateA;
     })
     .slice(0, 4);
-  const promoProducts = products.filter((p) => p.isPromo).slice(0, 4);
+
+  // Fetch promo products separately
+  useEffect(() => {
+    async function loadPromoProducts() {
+      try {
+        const medusaPromoProducts = await fetchPromoProducts(4);
+        const normalized = medusaPromoProducts.map(normaliseProduct);
+        setPromoProducts(normalized);
+      } catch (error) {
+        console.error('Failed to load promo products:', error);
+        setPromoProducts([]);
+      } finally {
+        setPromoLoading(false);
+      }
+    }
+    loadPromoProducts();
+  }, []);
 
   // Fetch product counts per category (including subcategories)
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -70,18 +89,6 @@ export default function HomePage() {
     image: cat.image?.url || HERO_IMAGE,
     count: counts[cat.handle] || 0,
   }));
-
-// Add this right after
-useEffect(() => {
-  console.log('Products in HomePage:', products.map(p => ({
-    id: p.id,
-    title: p.title,
-    price: p.price,
-    originalPrice: p.originalPrice,
-    isPromo: p.isPromo,
-    discountPercent: p.discountPercent
-  })));
-}, [products]);
   
   return (
     <main style={{ fontFamily: "Inter, sans-serif" }}>
@@ -112,7 +119,7 @@ useEffect(() => {
         </div>
       </section>
 
-{/* Categories Carousel */}
+      {/* Categories Carousel */}
       {!categoriesLoading && !countsLoading && enrichedCategories.length > 0 && (
         <section className="bg-[#F0F3FA] w-full">
           <div className="max-w-7xl mx-auto px-4 py-10">
@@ -167,48 +174,54 @@ useEffect(() => {
                 Voir tout <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {promoProducts.map((p) => <ProductCard key={p.id} product={p} />)}
-            </div>
+            {promoLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-7 h-7 text-[#D4302A] animate-spin" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {promoProducts.map((p) => <ProductCard key={p.id} product={p} />)}
+              </div>
+            )}
           </div>
         </section>
       )}
 
-        {/* Trust Badges */}
-        <section className="border-t border-[#E5E5E5] bg-[#F0F3FA] w-full py-10">
-          <div className="max-w-7xl mx-auto px-4">
-            <h2
-              className="text-[#1E1E1E] text-center mb-6"
-              style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.25rem", fontWeight: 600 }}
-            >
-              Nos services et garanties
-            </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { icon: "🚚", title: "Livraison rapide", desc: "3 à 5 jours ouvrables" },
-                { icon: "🔒", title: "Paiement sécurisé", desc: "Vos données sont protégées" },
-                { icon: "↩️", title: "Retour facile", desc: "Sous 14 jours" },
-                { icon: "🏆", title: "Qualité garantie", desc: "Produits authentiques" },
-              ].map((badge) => (
-                <div
-                  key={badge.title}
-                  className="flex items-start gap-3 bg-white rounded-xl border border-[#E5E5E5] p-4 transition-all duration-300 hover:shadow-lg hover:translate-y-1 hover:border-[#D4302A] group"
-                >
-                  <span className="text-2xl transition-transform duration-300 group-hover:scale-110">{badge.icon}</span>
-                  <div>
-                    <p
-                      className="font-semibold text-[#1E1E1E] text-sm"
-                      style={{ fontFamily: "Poppins, sans-serif" }}
-                    >
-                      {badge.title}
-                    </p>
-                    <p className="text-xs text-[#717182]">{badge.desc}</p>
-                  </div>
+      {/* Trust Badges */}
+      <section className="border-t border-[#E5E5E5] bg-[#F0F3FA] w-full py-10">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2
+            className="text-[#1E1E1E] text-center mb-6"
+            style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.25rem", fontWeight: 600 }}
+          >
+            Nos services et garanties
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: "🚚", title: "Livraison rapide", desc: "3 à 5 jours ouvrables" },
+              { icon: "🔒", title: "Paiement sécurisé", desc: "Vos données sont protégées" },
+              { icon: "↩️", title: "Retour facile", desc: "Sous 14 jours" },
+              { icon: "🏆", title: "Qualité garantie", desc: "Produits authentiques" },
+            ].map((badge) => (
+              <div
+                key={badge.title}
+                className="flex items-start gap-3 bg-white rounded-xl border border-[#E5E5E5] p-4 transition-all duration-300 hover:shadow-lg hover:translate-y-1 hover:border-[#D4302A] group"
+              >
+                <span className="text-2xl transition-transform duration-300 group-hover:scale-110">{badge.icon}</span>
+                <div>
+                  <p
+                    className="font-semibold text-[#1E1E1E] text-sm"
+                    style={{ fontFamily: "Poppins, sans-serif" }}
+                  >
+                    {badge.title}
+                  </p>
+                  <p className="text-xs text-[#717182]">{badge.desc}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        </section>
-      </main>
-    );
+        </div>
+      </section>
+    </main>
+  );
 }
