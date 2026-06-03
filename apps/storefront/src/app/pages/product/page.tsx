@@ -69,12 +69,23 @@ export default function ProductPage() {
     })
     .slice(0, 4);
 
-  // Resolve the active variant
+// Resolve the active variant
   const activeVariantId = selectedVariantId || product.variant_id || "";
   const activeVariant = product.variants?.find((v) => v.id === activeVariantId);
   const activePrice = activeVariant?.price ?? product.price;
 
+  // Check stock based on selected variant or product default
+  const selectedInStock = (() => {
+    if (activeVariant?.inventory_quantity !== undefined) {
+      return activeVariant.inventory_quantity > 0;
+    }
+    return product.inStock;
+  })();
+
   const handleAddToCart = () => {
+    // Don't add to cart if out of stock
+    if (!selectedInStock) return;
+
     // Pass the product with the currently selected variant_id so checkout can use it
     const productWithVariant = { ...product, variant_id: activeVariantId, price: activePrice };
     for (let i = 0; i < quantity; i++) {
@@ -219,7 +230,7 @@ export default function ProductPage() {
               </div>
 
               <div className="flex items-center gap-2 mb-5">
-                {product.inStock ? (
+                {selectedInStock ? (
                   <><span className="w-2 h-2 bg-green-500 rounded-full" /><span className="text-sm text-green-600 font-medium">En stock</span></>
                 ) : (
                   <><span className="w-2 h-2 bg-red-500 rounded-full" /><span className="text-sm text-red-500 font-medium">Rupture de stock</span></>
@@ -248,39 +259,40 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* Quantity */}
-              <div className="mb-5">
-                <p className="text-sm text-[#717182] mb-2 font-medium">Quantité</p>
-                <div className="flex items-center border border-[#E5E5E5] rounded-lg overflow-hidden w-fit">
-                  <button
-                    className="w-9 h-9 flex items-center justify-center hover:bg-[#F9F8F7] transition-colors"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
-                  <button
-                    className="w-9 h-9 flex items-center justify-center hover:bg-[#F9F8F7] transition-colors"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+{/* Quantity */}
+               <div className="mb-5">
+                 <p className="text-sm text-[#717182] mb-2 font-medium">Quantité</p>
+                 <div className="flex items-center border border-[#E5E5E5] rounded-lg overflow-hidden w-fit">
+                   <button
+                     className="w-9 h-9 flex items-center justify-center hover:bg-[#F9F8F7] transition-colors"
+                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                   >
+                     <Minus className="w-4 h-4" />
+                   </button>
+                   <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
+                   <button
+                     className="w-9 h-9 flex items-center justify-center hover:bg-[#F9F8F7] transition-colors"
+                     onClick={() => setQuantity(quantity + 1)}
+                   >
+                     <Plus className="w-4 h-4" />
+                   </button>
+                 </div>
+               </div>
 
               {/* CTAs */}
               <div className="flex flex-col gap-3">
                 <button
                   onClick={handleAddToCart}
-                  disabled={!product.inStock}
+                  disabled={!selectedInStock}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all ${
                     added ? "bg-green-500 text-white"
-                    : product.inStock ? "bg-[#D4302A] text-white hover:bg-[#b82a22]"
+                    : selectedInStock ? "bg-[#D4302A] text-white hover:bg-[#b82a22]"
                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
                   style={{ fontFamily: "Poppins, sans-serif" }}
                 >
                   {added ? <><Check className="w-4 h-4" /> Ajouté au panier</>
+                    : !selectedInStock ? <><ShoppingCart className="w-4 h-4" /> Rupture de stock</>
                     : <><ShoppingCart className="w-4 h-4" /> Ajouter au panier</>}
                 </button>
                 <button

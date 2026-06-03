@@ -336,10 +336,11 @@ export function normaliseProduct(p: MedusaProduct): StorefrontProduct {
     isPromo,
     variant_id: firstVariant?.id,
 variants: p.variants?.map((v) => ({
-       id: v.id,
-       title: v.title,
-       price: v.calculated_price?.calculated_amount ?? v.prices?.[0]?.amount ?? comparePrice,
-     })) ?? [],
+        id: v.id,
+        title: v.title,
+        price: v.calculated_price?.calculated_amount ?? v.prices?.[0]?.amount ?? comparePrice,
+        inventory_quantity: v.inventory_quantity,
+      })) ?? [],
     createdAt: p.created_at,
   } 
 }

@@ -7,6 +7,7 @@ export type ProductVariant = {
   id: string;
   title: string;
   price: number;
+  inventory_quantity?: number;
 };
 
 export type Product = {
