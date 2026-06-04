@@ -48,7 +48,7 @@ async function getDashboardData() {
       orderService.getOrderStats(),
       productService.getProductCount(),
       inventoryService.getLowStockItems(),
-      orderService.getRecentOrders(5),
+      orderService.getRecentOrders(10),
       auditService.getRecentActivities(8),
       db.query('SELECT COUNT(*) as total, COALESCE(SUM(total_amount), 0) as total_amount FROM orders WHERE created_at >= $1 AND created_at < $2', [previousPeriodStart.toISOString(), currentPeriodStart.toISOString()]),
       db.query('SELECT COUNT(*) FROM products WHERE created_at < $1', [currentPeriodStart.toISOString()]),

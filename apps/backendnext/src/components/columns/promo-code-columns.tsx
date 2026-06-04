@@ -45,7 +45,16 @@ export const promoCodeColumns = (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigator.clipboard.writeText(code)}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(code)
+              } catch (err) {
+                // Fallback: show a prompt to copy manually
+                // avoid throwing - keep UI responsive
+                // eslint-disable-next-line no-alert
+                alert(`Copy this code: ${code}`)
+              }
+            }}
             className="h-6 w-6 p-0"
           >
             <Copy className="h-3 w-3" />
