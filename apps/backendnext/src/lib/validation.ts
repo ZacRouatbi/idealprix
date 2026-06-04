@@ -109,6 +109,7 @@ export interface OrderItemInput {
 export interface CreateOrderInput {
   items: OrderItemInput[]
   customerEmail: string
+  customerUserId?: string
   customerName?: string
   customerPhone?: string
   shippingAddress: {

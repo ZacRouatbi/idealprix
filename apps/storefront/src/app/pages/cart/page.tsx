@@ -9,12 +9,14 @@ import {
   Tag,
 } from "lucide-react";
 import { useCart } from "../../../lib/context/CartContext";
+import { useAuth } from "../../../lib/context/AuthContext";
 import { formatPrice } from "../../../lib/data/products";
 import { apiClient } from "../../../lib/data/backend-api";
 import React, { useState } from "react";
 
 export default function CartPage() {
   const { cart, removeItem, updateQuantity, subtotal, total, applyPromo, removePromo } = useCart();
+  const { customer } = useAuth();
   const navigate = useNavigate();
   const [promoCode, setPromoCode] = useState("");
   const [promoMessage, setPromoMessage] = useState("");
@@ -236,26 +238,26 @@ export default function CartPage() {
                     setIsApplying(true);
                     setPromoMessage("");
 
-                    try {
-                      const validation = await apiClient<{ valid: boolean; promoCode?: { code: string; discountType: "percentage" | "fixed"; discountValue: number; minOrderValue: number } }>(
-                        `/public/promo-codes/${encodeURIComponent(promoCode.trim())}`
-                      );
+try {
+                       const validation = await apiClient<{ valid: boolean; promoCode?: { code: string; discountType: "percentage" | "fixed"; discountValue: number; minOrderValue: number } }>(
+                         `/public/promo-codes/${encodeURIComponent(promoCode.trim())}${customer?.id ? `?userId=${customer.id}` : ''}`
+                       );
 
-                      if (validation.valid && validation.promoCode) {
-                        if (validation.promoCode.minOrderValue && subtotal < validation.promoCode.minOrderValue) {
-                          setPromoMessage(`Minimum order value: ${formatPrice(validation.promoCode.minOrderValue)}`);
-                          return;
-                        }
-                        applyPromo(validation.promoCode);
-                        setPromoMessage("Promo code applied!");
-                      } else {
-                        setPromoMessage("Invalid promo code");
-                      }
-                    } catch (e) {
-                      setPromoMessage("Failed to validate promo code");
-                    } finally {
-                      setIsApplying(false);
-                    }
+                       if (validation.valid && validation.promoCode) {
+                         if (validation.promoCode.minOrderValue && subtotal < validation.promoCode.minOrderValue) {
+                           setPromoMessage(`Minimum order value: ${formatPrice(validation.promoCode.minOrderValue)}`);
+                           return;
+                         }
+                         applyPromo(validation.promoCode);
+                         setPromoMessage("Promo code applied!");
+                       } else {
+                         setPromoMessage(validation.error || "Invalid promo code");
+                       }
+                     } catch (e) {
+                       setPromoMessage("Failed to validate promo code");
+                     } finally {
+                       setIsApplying(false);
+                     }
                   }}
                   disabled={isApplying || !promoCode.trim()}
                   className="px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#1E1E1E] hover:bg-[#F9F8F7] transition-colors disabled:opacity-50"

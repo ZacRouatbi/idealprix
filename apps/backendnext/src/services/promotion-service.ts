@@ -191,7 +191,10 @@ export class PromotionService {
              pc.end_date        AS "endDate",
              pc.min_order_value AS "minOrderValue",
              pc.usage_limit     AS "usageLimit",
-             pc.used_count      AS "usedCount",
+             COALESCE((
+               SELECT COUNT(*) FROM promo_code_usage pcu 
+               WHERE pcu.promo_code_id = pc.id
+             ), 0) AS "usedCount",
              pc.is_active       AS "isActive",
              pc.created_at      AS "createdAt",
              pc.updated_at      AS "updatedAt"
@@ -236,7 +239,18 @@ export class PromotionService {
 
   async getPromoCode(id: string): Promise<PromoCode | null> {
     const result = await db.query('SELECT * FROM promo_codes WHERE id = $1', [id])
-    return result.rows[0] as PromoCode || null
+    if (!result.rows[0]) return null
+    
+    const promoCode = result.rows[0] as PromoCode
+    
+    // Get accurate usage count from usage table
+    const usageResult = await db.query(
+      'SELECT COUNT(*) as count FROM promo_code_usage WHERE promo_code_id = $1',
+      [id]
+    )
+    promoCode.usedCount = parseInt(usageResult.rows[0].count)
+    
+    return promoCode
   }
 
   async createPromoCode(data: {
@@ -349,6 +363,97 @@ export class PromotionService {
       [code, nowISO, nowISO]
     )
     return result.rows[0] as PromoCode || null
+  }
+
+  async getPromoCodeByCodeForUser(code: string, userId: string): Promise<PromoCode | null> {
+    const now = new Date()
+    const nowISO = now.toISOString()
+    const result = await db.query(
+      `SELECT pc.id,
+              pc.code,
+              pc.discount_type AS "discountType",
+              pc.discount_value AS "discountValue",
+              pc.start_date AS "startDate",
+              pc.end_date AS "endDate",
+              pc.min_order_value AS "minOrderValue",
+              pc.usage_limit AS "usageLimit",
+              pc.used_count AS "usedCount",
+              pc.is_active AS "isActive",
+              pc.created_at AS "createdAt",
+              pc.updated_at AS "updatedAt"
+       FROM promo_codes pc
+       WHERE pc.code = $1
+         AND pc.is_active = true
+         AND pc.start_date <= $2
+         AND pc.end_date >= $3
+         AND NOT EXISTS (
+           SELECT 1 FROM promo_code_usage pcu 
+           WHERE pcu.promo_code_id = pc.id 
+           AND pcu.user_id = $4
+         )
+         AND (pc.usage_limit IS NULL OR pc.used_count < pc.usage_limit)`,
+      [code, nowISO, nowISO, userId]
+    )
+    return result.rows[0] as PromoCode || null
+  }
+
+  async incrementPromoCodeUsage(promoCodeId: string, userId: string, orderId?: string): Promise<void> {
+    const client = await db.getClient()
+    try {
+      await client.query('BEGIN')
+      
+      // Insert usage record (will fail if user already used this code due to UNIQUE constraint)
+      // Only include order_id if provided
+      if (orderId) {
+        await client.query(
+          `INSERT INTO promo_code_usage (id, promo_code_id, user_id, order_id)
+           VALUES (gen_random_uuid(), $1, $2, $3)`,
+          [promoCodeId, userId, orderId]
+        )
+      } else {
+        await client.query(
+          `INSERT INTO promo_code_usage (id, promo_code_id, user_id)
+           VALUES (gen_random_uuid(), $1, $2)`,
+          [promoCodeId, userId]
+        )
+      }
+      
+      // Increment used_count
+      await client.query(
+        'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
+        [promoCodeId]
+      )
+      
+      await client.query('COMMIT')
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
+  async incrementPromoCodeUsageInTransaction(client: any, promoCodeId: string, userId: string, orderId: string): Promise<void> {
+    // Insert usage record (will fail if user already used this code due to UNIQUE constraint)
+    await client.query(
+      `INSERT INTO promo_code_usage (id, promo_code_id, user_id, order_id)
+       VALUES (gen_random_uuid(), $1, $2, $3)`,
+      [promoCodeId, userId, orderId]
+    )
+    
+    // Increment used_count
+    await client.query(
+      'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
+      [promoCodeId]
+    )
+  }
+
+  async getPromoCodeUsageCount(promoCodeId: string): Promise<number> {
+    const result = await db.query(
+      'SELECT COUNT(*) FROM promo_code_usage WHERE promo_code_id = $1',
+      [promoCodeId]
+    )
+    return parseInt(result.rows[0].count)
   }
 }
 

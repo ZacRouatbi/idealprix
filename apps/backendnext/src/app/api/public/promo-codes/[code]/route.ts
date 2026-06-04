@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { promotionService } from '@/services/promotion-service'
 import { rateLimit } from '@/lib/validation'
+import { db } from '@/lib/db'
 
 const publicRateLimit = rateLimit({
   windowMs: 60000,
@@ -46,12 +47,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (rateLimitResponse) return addCorsHeaders(rateLimitResponse, request)
 
   try {
+    const searchParams = request.nextUrl.searchParams
     const { code } = await params
+    const userId = searchParams.get('userId')
     
-    const promoCode = await promotionService.getPromoCodeByCode(code)
+    // For logged-in users, check if they already used this promo code
+    const promoCode = userId 
+      ? await promotionService.getPromoCodeByCodeForUser(code, userId)
+      : await promotionService.getPromoCodeByCode(code)
     
     if (!promoCode) {
-      return NextResponse.json({ error: 'Invalid or expired promo code' }, { status: 404, headers: corsHeaders })
+      // Check if code exists but user already used it
+      if (userId) {
+        const codeExists = await promotionService.getPromoCodeByCode(code)
+        if (codeExists) {
+          const userUsed = await db.query(
+            'SELECT 1 FROM promo_code_usage WHERE promo_code_id = $1 AND user_id = $2',
+            [codeExists.id, userId]
+          )
+          if (userUsed.rows.length > 0) {
+            return NextResponse.json({ valid: false, error: 'Already used by this account' }, { status: 400, headers: corsHeaders })
+          }
+        }
+      }
+      return NextResponse.json({ valid: false, error: 'Invalid or expired promo code' }, { status: 404, headers: corsHeaders })
     }
 
     return NextResponse.json({
@@ -64,6 +83,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }, { headers: corsHeaders })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders })
+    return NextResponse.json({ valid: false, error: error.message }, { status: 500, headers: corsHeaders })
   }
 }

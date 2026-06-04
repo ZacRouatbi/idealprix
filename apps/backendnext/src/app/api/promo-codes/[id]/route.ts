@@ -23,7 +23,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!promoCode) {
       return NextResponse.json({ error: 'Promo code not found' }, { status: 404 })
     }
-    return NextResponse.json(promoCode)
+    
+    // Get accurate usage count from usage table
+    const usageCount = await promotionService.getPromoCodeUsageCount(id)
+    const promoCodeWithUsage = { ...promoCode, usedCount: usageCount }
+    
+    return NextResponse.json(promoCodeWithUsage)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

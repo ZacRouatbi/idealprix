@@ -67,9 +67,25 @@ export async function POST(request: NextRequest) {
     
     // Validate promo code if provided
     let discount = 0
-    if (data.promoCode) {
-      const promo = await promotionService.getPromoCodeByCode(data.promoCode)
+    let promoCodeId: string | null = null
+    if (data.promoCode && data.customerEmail) {
+      // First try to validate per-user usage (one time per account)
+      const promo = data.customerUserId 
+        ? await promotionService.getPromoCodeByCodeForUser(data.promoCode, data.customerUserId)
+        : await promotionService.getPromoCodeByCode(data.promoCode)
+      
       if (!promo) {
+        // Check if code exists but user already used it
+        const codeExists = await promotionService.getPromoCodeByCode(data.promoCode)
+        if (codeExists && data.customerUserId) {
+          const userUsed = await db.query(
+            'SELECT 1 FROM promo_code_usage WHERE promo_code_id = $1 AND user_id = $2',
+            [codeExists.id, data.customerUserId]
+          )
+          if (userUsed.rows.length > 0) {
+            return addCorsHeaders(NextResponse.json({ error: 'Promo code already used by this account' }, { status: 400 }), request)
+          }
+        }
         return addCorsHeaders(NextResponse.json({ error: 'Invalid or expired promo code' }, { status: 400 }), request)
       }
       if (promo.minOrderValue && calculatedSubtotal < promo.minOrderValue) {
@@ -78,6 +94,7 @@ export async function POST(request: NextRequest) {
       discount = promo.discountType === 'percentage' 
         ? Math.floor(calculatedSubtotal * promo.discountValue / 100)
         : promo.discountValue
+      promoCodeId = promo.id
     }
     
     // Validate shipping - either use provider ID or validate shipping amount matches a valid provider
@@ -135,11 +152,16 @@ for (const item of data.items) {
            [uuidv4(), order.id, item.productId, item.productName, item.productSku || null,
             item.quantity, item.unitPrice, item.unitPrice * item.quantity, item.productImage || null]
          )
-         // Reserve inventory only - stock will be deducted when order is paid
-         await client.query('UPDATE inventory SET reserved_quantity = reserved_quantity + $1 WHERE product_id = $2', [item.quantity, item.productId])
-       }
+// Reserve inventory only - stock will be deducted when order is paid
+          await client.query('UPDATE inventory SET reserved_quantity = reserved_quantity + $1 WHERE product_id = $2', [item.quantity, item.productId])
+        }
 
-      await client.query('COMMIT')
+        // Increment promo code usage (track per-user usage)
+        if (promoCodeId && data.customerUserId) {
+          await promotionService.incrementPromoCodeUsageInTransaction(client, promoCodeId, data.customerUserId, order.id)
+        }
+
+        await client.query('COMMIT')
       return addCorsHeaders(NextResponse.json({ order: { id: order.id, order_number: order.order_number, status: order.status, total_amount: order.total_amount } }, { status: 201 }), request)
 
     } catch (error) {

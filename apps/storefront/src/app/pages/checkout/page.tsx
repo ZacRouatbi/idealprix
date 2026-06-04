@@ -161,6 +161,7 @@ export default function CheckoutPage() {
           productImage: (item.product as any).image,
         })),
         customerEmail: address.email,
+        customerUserId: customer?.id,
         customerName: address.fullName,
         customerPhone: address.phone,
         shippingAddress: {
