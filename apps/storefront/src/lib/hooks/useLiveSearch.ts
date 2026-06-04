@@ -8,7 +8,7 @@ export function useLiveSearch(initial = "") {
   const controllerRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<number | null>(null);
 
-  useEffect(() => {
+useEffect(() => {
     const q = query.trim().toLowerCase();
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
     if (!q) {
@@ -21,17 +21,9 @@ export function useLiveSearch(initial = "") {
       controllerRef.current = new AbortController();
       setIsLoading(true);
       try {
-        // Fetch products and filter client-side by title/description/handle
-        const data = await fetchProducts({ limit: 100 });
-        const filtered = data.products
-          .filter(p => 
-            p.title.toLowerCase().includes(q) ||
-            (p.description && p.description.toLowerCase().includes(q)) ||
-            p.handle.toLowerCase().includes(q) ||
-            (p.metadata?.brand && (p.metadata.brand as string).toLowerCase().includes(q))
-          )
-          .map(normaliseProduct)
-          .slice(0, 10); // Limit to 10 results
+        // Server-side search with small limit for instant results
+        const data = await fetchProducts({ search: q, limit: 10 });
+        const filtered = data.products.map(normaliseProduct).slice(0, 10);
         setResults(filtered);
       } catch (err: any) {
         if (err.name !== "AbortError") console.error(err);

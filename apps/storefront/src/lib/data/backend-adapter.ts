@@ -78,6 +78,7 @@ export async function fetchProducts(params: {
   category_handle?: string | string[]
   category_id?: string | string[]
   handle?: string | string[]
+  search?: string
 } = {}): Promise<MedusaListResponse> {
   const qs = new URLSearchParams()
   if (params.limit) qs.set('limit', String(params.limit))
@@ -92,7 +93,7 @@ export async function fetchProducts(params: {
       limit: params.limit,
       offset: params.offset,
       category_id: typeof params.category_id === 'string' ? params.category_id : params.category_id?.join(','),
-      search: params.handle ? undefined : undefined,
+      search: params.search,
     }),
     fetchActivePromotions(),
   ])
