@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import {
   ChevronRight, ChevronLeft, ChevronDown, ChevronUp,
-  Heart, ShoppingCart, Star, Minus, Plus, Check,
+  ShoppingCart, Star, Minus, Plus, Check,
   Truck, RotateCcw, Shield, Loader2, AlertCircle,
 } from "lucide-react";
 import { formatPrice } from "../../../lib/data/products";
@@ -296,17 +296,13 @@ export default function ProductPage() {
                     : !selectedInStock ? <><ShoppingCart className="w-4 h-4" /> Rupture de stock</>
                     : <><ShoppingCart className="w-4 h-4" /> Ajouter au panier</>}
                 </button>
-                <button
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border transition-colors ${
-                    wishlisted ? "border-[#D4302A] text-[#D4302A] bg-red-50"
-                    : "border-[#E5E5E5] text-[#717182] hover:border-[#D4302A] hover:text-[#D4302A]"
-                  }`}
-                  onClick={() => setWishlisted(!wishlisted)}
-                  style={{ fontFamily: "Poppins, sans-serif" }}
-                >
-                  <Heart className={`w-4 h-4 ${wishlisted ? "fill-[#D4302A]" : ""}`} />
-                  Ajouter à la liste de souhaits
-                </button>
+                {/* Wishlist button removed per request. Keep layout spacing using an invisible placeholder */}
+                <div
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border ${
+                    "border-[#E5E5E5] text-[#717182]"
+                  } invisible`}
+                  aria-hidden="true"
+                />
               </div>
 
               <div className="mt-5 pt-5 border-t border-[#E5E5E5] flex flex-col gap-2">
