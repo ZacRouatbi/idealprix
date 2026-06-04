@@ -64,26 +64,37 @@ export async function POST(request: NextRequest) {
     }
 
     const calculatedSubtotal = data.items.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0)
-    
+
     // Validate promo code if provided
     let discount = 0
     let promoCodeId: string | null = null
     if (data.promoCode && data.customerEmail) {
-      // First try to validate per-user usage (one time per account)
-      const promo = data.customerUserId 
+      const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+
+      const promo = data.customerUserId
         ? await promotionService.getPromoCodeByCodeForUser(data.promoCode, data.customerUserId)
-        : await promotionService.getPromoCodeByCode(data.promoCode)
-      
+        : await promotionService.getPromoCodeByCodeForIP(data.promoCode, ipAddress)
+
       if (!promo) {
-        // Check if code exists but user already used it
         const codeExists = await promotionService.getPromoCodeByCode(data.promoCode)
-        if (codeExists && data.customerUserId) {
-          const userUsed = await db.query(
-            'SELECT 1 FROM promo_code_usage WHERE promo_code_id = $1 AND user_id = $2',
-            [codeExists.id, data.customerUserId]
-          )
-          if (userUsed.rows.length > 0) {
-            return addCorsHeaders(NextResponse.json({ error: 'Promo code already used by this account' }, { status: 400 }), request)
+        if (codeExists) {
+          if (data.customerUserId) {
+            const userUsed = await db.query(
+              'SELECT 1 FROM promo_code_usage WHERE promo_code_id = $1 AND user_id = $2',
+              [codeExists.id, data.customerUserId]
+            )
+            if (userUsed.rows.length > 0) {
+              return addCorsHeaders(NextResponse.json({ error: 'Promo code already used by this account' }, { status: 400 }), request)
+            }
+          } else {
+            const today = new Date().toISOString().split('T')[0]
+            const ipUsed = await db.query(
+              'SELECT 1 FROM promo_code_usage WHERE promo_code_id = $1 AND ip_address = $2 AND used_at::date = $3',
+              [codeExists.id, ipAddress || null, today]
+            )
+            if (ipUsed.rows.length > 0) {
+              return addCorsHeaders(NextResponse.json({ error: 'Promo code already used from this IP address today' }, { status: 400 }), request)
+            }
           }
         }
         return addCorsHeaders(NextResponse.json({ error: 'Invalid or expired promo code' }, { status: 400 }), request)
@@ -91,12 +102,12 @@ export async function POST(request: NextRequest) {
       if (promo.minOrderValue && calculatedSubtotal < promo.minOrderValue) {
         return addCorsHeaders(NextResponse.json({ error: `Minimum order value for this promo is ${promo.minOrderValue}` }, { status: 400 }), request)
       }
-      discount = promo.discountType === 'percentage' 
+      discount = promo.discountType === 'percentage'
         ? Math.floor(calculatedSubtotal * promo.discountValue / 100)
         : promo.discountValue
       promoCodeId = promo.id
     }
-    
+
     // Validate shipping - either use provider ID or validate shipping amount matches a valid provider
     let shippingAmount = 0
     if (data.shippingProviderId) {
@@ -113,13 +124,13 @@ export async function POST(request: NextRequest) {
       }
       shippingAmount = data.shippingAmount
     }
-    
+
     const calculatedTotal = calculatedSubtotal - discount + shippingAmount
 
     if (Math.abs(calculatedSubtotal - data.subtotal) > 0.01) {
       return addCorsHeaders(NextResponse.json({ error: 'Subtotal mismatch' }, { status: 400 }), request)
     }
-    
+
     if (Math.abs(discount - (data.subtotal - data.total)) > 0.01) {
       return addCorsHeaders(NextResponse.json({ error: 'Total mismatch - please recalculate' }, { status: 400 }), request)
     }
@@ -145,23 +156,26 @@ export async function POST(request: NextRequest) {
 
       const order = orderResult.rows[0]
 
-for (const item of data.items) {
-         await client.query(
-           `INSERT INTO order_items (id, order_id, product_id, product_name, product_sku,
-             quantity, unit_price, total_price, product_image) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-           [uuidv4(), order.id, item.productId, item.productName, item.productSku || null,
+      for (const item of data.items) {
+        await client.query(
+          `INSERT INTO order_items (id, order_id, product_id, product_name, product_sku,
+            quantity, unit_price, total_price, product_image) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [uuidv4(), order.id, item.productId, item.productName, item.productSku || null,
             item.quantity, item.unitPrice, item.unitPrice * item.quantity, item.productImage || null]
-         )
-// Reserve inventory only - stock will be deducted when order is paid
-          await client.query('UPDATE inventory SET reserved_quantity = reserved_quantity + $1 WHERE product_id = $2', [item.quantity, item.productId])
-        }
+        )
+        await client.query('UPDATE inventory SET reserved_quantity = reserved_quantity + $1 WHERE product_id = $2', [item.quantity, item.productId])
+      }
 
-        // Increment promo code usage (track per-user usage)
-        if (promoCodeId && data.customerUserId) {
+      if (promoCodeId) {
+        if (data.customerUserId) {
           await promotionService.incrementPromoCodeUsageInTransaction(client, promoCodeId, data.customerUserId, order.id)
+        } else {
+          const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+          await promotionService.incrementPromoCodeUsageInTransaction(client, promoCodeId, undefined, order.id, ipAddress || undefined)
         }
+      }
 
-        await client.query('COMMIT')
+      await client.query('COMMIT')
       return addCorsHeaders(NextResponse.json({ order: { id: order.id, order_number: order.order_number, status: order.status, total_amount: order.total_amount } }, { status: 201 }), request)
 
     } catch (error) {

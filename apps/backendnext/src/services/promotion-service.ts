@@ -397,33 +397,84 @@ export class PromotionService {
     return result.rows[0] as PromoCode || null
   }
 
-  async incrementPromoCodeUsage(promoCodeId: string, userId: string, orderId?: string): Promise<void> {
+  async getPromoCodeByCodeForIP(code: string, ipAddress: string | null): Promise<PromoCode | null> {
+    const now = new Date()
+    const nowISO = now.toISOString()
+    const today = new Date().toISOString().split('T')[0]
+    const result = await db.query(
+      `SELECT pc.id,
+              pc.code,
+              pc.discount_type AS "discountType",
+              pc.discount_value AS "discountValue",
+              pc.start_date AS "startDate",
+              pc.end_date AS "endDate",
+              pc.min_order_value AS "minOrderValue",
+              pc.usage_limit AS "usageLimit",
+              pc.used_count AS "usedCount",
+              pc.is_active AS "isActive",
+              pc.created_at AS "createdAt",
+              pc.updated_at AS "updatedAt"
+       FROM promo_codes pc
+       WHERE pc.code = $1
+         AND pc.is_active = true
+         AND pc.start_date <= $2
+         AND pc.end_date >= $3
+         AND (NOT EXISTS (
+           SELECT 1 FROM promo_code_usage pcu 
+           WHERE pcu.promo_code_id = pc.id 
+           AND pcu.ip_address = $4
+           AND pcu.used_at::date = $5
+         ) OR $4 IS NULL)
+         AND (pc.usage_limit IS NULL OR pc.used_count < pc.usage_limit)`,
+      [code, nowISO, nowISO, ipAddress || null, today]
+    )
+    return result.rows[0] as PromoCode || null
+  }
+
+async incrementPromoCodeUsage(promoCodeId: string, userId?: string, orderId?: string, ipAddress?: string): Promise<void> {
     const client = await db.getClient()
     try {
       await client.query('BEGIN')
-      
-      // Insert usage record (will fail if user already used this code due to UNIQUE constraint)
-      // Only include order_id if provided
-      if (orderId) {
+
+      // Insert usage record
+      if (userId && orderId) {
         await client.query(
           `INSERT INTO promo_code_usage (id, promo_code_id, user_id, order_id)
            VALUES (gen_random_uuid(), $1, $2, $3)`,
           [promoCodeId, userId, orderId]
         )
+      } else if (ipAddress && orderId) {
+        await client.query(
+          `INSERT INTO promo_code_usage (id, promo_code_id, ip_address, order_id)
+           VALUES (gen_random_uuid(), $1, $2, $3)`,
+          [promoCodeId, ipAddress, orderId]
+        )
+      } else if (ipAddress) {
+        await client.query(
+          `INSERT INTO promo_code_usage (id, promo_code_id, ip_address)
+           VALUES (gen_random_uuid(), $1, $2)`,
+          [promoCodeId, ipAddress]
+        )
+      } else if (orderId) {
+        await client.query(
+          `INSERT INTO promo_code_usage (id, promo_code_id, order_id)
+           VALUES (gen_random_uuid(), $1, $2)`,
+          [promoCodeId, orderId]
+        )
       } else {
         await client.query(
-          `INSERT INTO promo_code_usage (id, promo_code_id, user_id)
-           VALUES (gen_random_uuid(), $1, $2)`,
-          [promoCodeId, userId]
+          `INSERT INTO promo_code_usage (id, promo_code_id)
+           VALUES (gen_random_uuid(), $1)`,
+          [promoCodeId]
         )
       }
-      
+
       // Increment used_count
       await client.query(
         'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
         [promoCodeId]
       )
-      
+
       await client.query('COMMIT')
     } catch (err) {
       await client.query('ROLLBACK')
@@ -433,14 +484,40 @@ export class PromotionService {
     }
   }
 
-  async incrementPromoCodeUsageInTransaction(client: any, promoCodeId: string, userId: string, orderId: string): Promise<void> {
-    // Insert usage record (will fail if user already used this code due to UNIQUE constraint)
-    await client.query(
-      `INSERT INTO promo_code_usage (id, promo_code_id, user_id, order_id)
-       VALUES (gen_random_uuid(), $1, $2, $3)`,
-      [promoCodeId, userId, orderId]
-    )
-    
+  async incrementPromoCodeUsageInTransaction(client: any, promoCodeId: string, userId?: string, orderId?: string, ipAddress?: string): Promise<void> {
+    // Insert usage record
+    if (userId && orderId) {
+      await client.query(
+        `INSERT INTO promo_code_usage (id, promo_code_id, user_id, order_id)
+         VALUES (gen_random_uuid(), $1, $2, $3)`,
+        [promoCodeId, userId, orderId]
+      )
+    } else if (ipAddress && orderId) {
+      await client.query(
+        `INSERT INTO promo_code_usage (id, promo_code_id, ip_address, order_id)
+         VALUES (gen_random_uuid(), $1, $2, $3)`,
+        [promoCodeId, ipAddress, orderId]
+      )
+    } else if (ipAddress) {
+      await client.query(
+        `INSERT INTO promo_code_usage (id, promo_code_id, ip_address)
+         VALUES (gen_random_uuid(), $1, $2)`,
+        [promoCodeId, ipAddress]
+      )
+    } else if (orderId) {
+      await client.query(
+        `INSERT INTO promo_code_usage (id, promo_code_id, order_id)
+         VALUES (gen_random_uuid(), $1, $2)`,
+        [promoCodeId, orderId]
+      )
+    } else {
+      await client.query(
+        `INSERT INTO promo_code_usage (id, promo_code_id)
+         VALUES (gen_random_uuid(), $1)`,
+        [promoCodeId]
+      )
+    }
+
     // Increment used_count
     await client.query(
       'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
@@ -455,6 +532,7 @@ export class PromotionService {
     )
     return parseInt(result.rows[0].count)
   }
-}
+ }
 
-export const promotionService = new PromotionService()
+ export const promotionService = new PromotionService()
+

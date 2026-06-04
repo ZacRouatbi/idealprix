@@ -47,7 +47,8 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
         )
         
         if (!validation.valid) {
-          setErrorMessage("Invalid or expired promo code")
+          // Show server-provided error when available
+          setErrorMessage((validation as any).error || "Invalid or expired promo code")
           return
         }
 

@@ -1,5 +1,7 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import fs from "fs"
+import path from "path"
 
 export function generatePDFReport(options: {
   title: string
@@ -9,7 +11,27 @@ export function generatePDFReport(options: {
   chartText?: string[]
 }): Uint8Array {
   const doc = new jsPDF()
-  let yPos = 20
+  let _initialY: number | undefined
+  try {
+    const logoPath = path.join(process.cwd(), "public", "idealprixlogo.png")
+    if (fs.existsSync(logoPath)) {
+      const logoData = fs.readFileSync(logoPath).toString("base64")
+      // center and enlarge logo
+      const pageWidth = (doc as any).internal.pageSize.getWidth
+        ? (doc as any).internal.pageSize.getWidth()
+        : (doc as any).internal.pageSize.width
+      const logoWidth = 60
+      const logoHeight = 30
+      const xPos = (pageWidth - logoWidth) / 2
+      const yPosLogo = 10
+      doc.addImage("data:image/png;base64," + logoData, "PNG", xPos, yPosLogo, logoWidth, logoHeight)
+      // push content below logo
+      _initialY = yPosLogo + logoHeight + 10
+    }
+  } catch (e) {
+    // ignore if reading logo fails
+  }
+  let yPos = typeof _initialY === "number" ? _initialY : 20
 
   doc.setFontSize(20)
   doc.text(options.title, 14, yPos)
@@ -31,7 +53,7 @@ export function generatePDFReport(options: {
       body: options.stats.map(s => [s.label, String(s.value)]),
       startY: yPos,
       styles: { fontSize: 10 },
-      headStyles: { fillColor: [59, 130, 246] },
+      headStyles: { fillColor: [212, 48, 42] },
     })
     yPos = (doc as any).lastAutoTable.finalY + 15
   }
@@ -52,7 +74,7 @@ export function generatePDFReport(options: {
         body: table.data,
         startY: yPos,
         styles: { fontSize: 8 },
-        headStyles: { fillColor: [59, 130, 246] },
+        headStyles: { fillColor: [212, 48, 42] },
       })
       yPos = (doc as any).lastAutoTable.finalY + 15
     })

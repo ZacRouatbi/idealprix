@@ -17,11 +17,11 @@ const getCorsHeaders = (request: NextRequest) => {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Credentials': 'true',
   }
-  
+
   if (origin && ALLOWED_ORIGINS.some(allowed => allowed === origin)) {
     headers['Access-Control-Allow-Origin'] = origin
   }
-  
+
   return headers
 }
 
@@ -50,23 +50,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const searchParams = request.nextUrl.searchParams
     const { code } = await params
     const userId = searchParams.get('userId')
-    
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+
     // For logged-in users, check if they already used this promo code
-    const promoCode = userId 
+    // For guests, check by IP address (one use per IP per day)
+    const promoCode = userId
       ? await promotionService.getPromoCodeByCodeForUser(code, userId)
-      : await promotionService.getPromoCodeByCode(code)
-    
+      : await promotionService.getPromoCodeByCodeForIP(code, ipAddress)
+
     if (!promoCode) {
-      // Check if code exists but user already used it
-      if (userId) {
-        const codeExists = await promotionService.getPromoCodeByCode(code)
-        if (codeExists) {
+      // Check if code exists but user/IP already used it
+      const codeExistsCheck = await promotionService.getPromoCodeByCode(code)
+      if (codeExistsCheck) {
+        if (userId) {
           const userUsed = await db.query(
             'SELECT 1 FROM promo_code_usage WHERE promo_code_id = $1 AND user_id = $2',
-            [codeExists.id, userId]
+            [codeExistsCheck.id, userId]
           )
           if (userUsed.rows.length > 0) {
             return NextResponse.json({ valid: false, error: 'Already used by this account' }, { status: 400, headers: corsHeaders })
+          }
+        } else {
+          const today = new Date().toISOString().split('T')[0]
+          const ipUsed = await db.query(
+            'SELECT 1 FROM promo_code_usage WHERE promo_code_id = $1 AND ip_address = $2 AND used_at::date = $3',
+            [codeExistsCheck.id, ipAddress || null, today]
+          )
+          if (ipUsed.rows.length > 0) {
+            return NextResponse.json({ valid: false, error: 'Already used from this IP address today' }, { status: 400, headers: corsHeaders })
           }
         }
       }

@@ -199,7 +199,7 @@ export default function CartPage() {
                 )}
               </div>
 
-              <div className="border-t border-[#E5E5E5] mt-3 pt-3">
+<div className="border-t border-[#E5E5E5] mt-3 pt-3">
                 <div className="flex justify-between">
                   <span
                     className="font-semibold text-[#1E1E1E]"
@@ -238,26 +238,26 @@ export default function CartPage() {
                     setIsApplying(true);
                     setPromoMessage("");
 
-try {
-                       const validation = await apiClient<{ valid: boolean; promoCode?: { code: string; discountType: "percentage" | "fixed"; discountValue: number; minOrderValue: number } }>(
-                         `/public/promo-codes/${encodeURIComponent(promoCode.trim())}${customer?.id ? `?userId=${customer.id}` : ''}`
-                       );
+                    try {
+                      const validation = await apiClient<{ valid: boolean; promoCode?: { code: string; discountType: "percentage" | "fixed"; discountValue: number; minOrderValue?: number }; error?: string }>(
+                        `/public/promo-codes/${encodeURIComponent(promoCode.trim())}${customer?.id ? `?userId=${customer.id}` : ''}`
+                      );
 
-                       if (validation.valid && validation.promoCode) {
-                         if (validation.promoCode.minOrderValue && subtotal < validation.promoCode.minOrderValue) {
-                           setPromoMessage(`Minimum order value: ${formatPrice(validation.promoCode.minOrderValue)}`);
-                           return;
-                         }
-                         applyPromo(validation.promoCode);
-                         setPromoMessage("Promo code applied!");
-                       } else {
-                         setPromoMessage(validation.error || "Invalid promo code");
-                       }
-                     } catch (e) {
-                       setPromoMessage("Failed to validate promo code");
-                     } finally {
-                       setIsApplying(false);
-                     }
+                      if (validation.valid && validation.promoCode) {
+                        if (validation.promoCode.minOrderValue && subtotal < validation.promoCode.minOrderValue) {
+                          setPromoMessage(`Minimum order value required: ${formatPrice(validation.promoCode.minOrderValue)}`);
+                          return;
+                        }
+                        applyPromo(validation.promoCode);
+                        setPromoMessage("Promo code applied!");
+                      } else {
+                        setPromoMessage(validation.error || "Invalid promo code");
+                      }
+                    } catch (e) {
+                      setPromoMessage(e instanceof Error ? e.message : "Failed to validate promo code");
+                    } finally {
+                      setIsApplying(false);
+                    }
                   }}
                   disabled={isApplying || !promoCode.trim()}
                   className="px-3 py-2.5 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#1E1E1E] hover:bg-[#F9F8F7] transition-colors disabled:opacity-50"
@@ -266,7 +266,7 @@ try {
                 </button>
               </div>
               {promoMessage && (
-                <p className={`text-xs mt-2 ${promoMessage.includes("Invalid") || promoMessage.includes("Failed") || promoMessage.includes("already") ? "text-red-500" : "text-green-600"}`}>
+                <p className={`text-xs mt-2 ${promoMessage.includes("Invalid") || promoMessage.includes("Failed") || promoMessage.includes("already") || promoMessage.includes("Minimum") ? "text-red-500" : "text-green-600"}`}>
                   {promoMessage}
                 </p>
               )}
@@ -277,6 +277,7 @@ try {
                     onClick={() => {
                       removePromo();
                       setPromoCode("");
+                      setPromoMessage("");
                     }}
                     className="text-xs text-[#717182] hover:text-[#D4302A]"
                   >
