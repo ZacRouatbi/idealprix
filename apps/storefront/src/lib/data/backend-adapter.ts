@@ -88,7 +88,7 @@ export async function fetchProducts(params: {
     for (const h of handles) qs.append('handle[]', h)
   }
 
-  const [response, promotions] = await Promise.all([
+  const [response, promotions, categoriesResponse] = await Promise.all([
     apiFetchProducts({
       limit: params.limit,
       offset: params.offset,
@@ -96,9 +96,33 @@ export async function fetchProducts(params: {
       search: params.search,
     }),
     fetchActivePromotions(),
+    apiFetchCategories({ limit: 1000 }),
   ])
 
-  // Build a lookup: productId → best promotion, categoryId → best promotion
+  // Build category children map for descendant resolution
+  const flatCategories = (categoriesResponse && (categoriesResponse as any).data) || []
+  const childrenMap = new Map<string, string[]>()
+  for (const c of flatCategories) {
+    const parentId = c.parent_id || c.parent_category_id || null
+    if (parentId) {
+      if (!childrenMap.has(parentId)) childrenMap.set(parentId, [])
+      childrenMap.get(parentId)!.push(c.id)
+    }
+  }
+  const getAllDescendants = (startId: string) => {
+    const result = new Set<string>()
+    const stack = [startId]
+    while (stack.length) {
+      const cur = stack.pop()!
+      if (result.has(cur)) continue
+      result.add(cur)
+      const children = childrenMap.get(cur) || []
+      for (const ch of children) stack.push(ch)
+    }
+    return Array.from(result)
+  }
+
+  // Build a lookup: productId → best promotion, categoryId → best promotion (including descendants)
   const promoByProduct = new Map<string, ActivePromotion>()
   const promoByCategory = new Map<string, ActivePromotion>()
   for (const promo of promotions) {
@@ -108,9 +132,15 @@ export async function fetchProducts(params: {
         promoByProduct.set(promo.targetId, promo)
       }
     } else if (promo.targetType === 'category') {
-      const existing = promoByCategory.get(promo.targetId)
-      if (!existing || promo.discountValue > existing.discountValue) {
-        promoByCategory.set(promo.targetId, promo)
+      // apply this category promotion to the category itself and all descendant categories
+      const catIds = getAllDescendants(promo.targetId)
+      // ensure the root category is included
+      if (!catIds.includes(promo.targetId)) catIds.push(promo.targetId)
+      for (const cid of catIds) {
+        const existing = promoByCategory.get(cid)
+        if (!existing || promo.discountValue > existing.discountValue) {
+          promoByCategory.set(cid, promo)
+        }
       }
     }
   }
@@ -174,23 +204,51 @@ export async function fetchProducts(params: {
 
 export async function fetchProductByHandle(handle: string): Promise<MedusaProduct | null> {
   try {
-    const [response, promotions] = await Promise.all([
+    const [response, promotions, categoriesResponse] = await Promise.all([
       apiFetchProducts({ slug: handle }),
       fetchActivePromotions(),
+      apiFetchCategories({ limit: 1000 }),
     ])
     const product = response.data[0]
     if (!product) return null
 
-    // Build promotion lookup for consistency with fetchProducts
+    // Build category children map for descendant resolution
+    const flatCategories = (categoriesResponse && (categoriesResponse as any).data) || []
+    const childrenMap = new Map<string, string[]>()
+    for (const c of flatCategories) {
+      const parentId = c.parent_id || c.parent_category_id || null
+      if (parentId) {
+        if (!childrenMap.has(parentId)) childrenMap.set(parentId, [])
+        childrenMap.get(parentId)!.push(c.id)
+      }
+    }
+    const getAllDescendants = (startId: string) => {
+      const result = new Set<string>()
+      const stack = [startId]
+      while (stack.length) {
+        const cur = stack.pop()!
+        if (result.has(cur)) continue
+        result.add(cur)
+        const children = childrenMap.get(cur) || []
+        for (const ch of children) stack.push(ch)
+      }
+      return Array.from(result)
+    }
+
+    // Build promotion lookup for consistency with fetchProducts (apply category promos to descendants)
     const promoByProduct = new Map<string, ActivePromotion>()
     const promoByCategory = new Map<string, ActivePromotion>()
     for (const promo of promotions) {
       if (promo.targetType === 'product') {
         promoByProduct.set(promo.targetId, promo)
       } else if (promo.targetType === 'category') {
-        const existing = promoByCategory.get(promo.targetId)
-        if (!existing || promo.discountValue > existing.discountValue) {
-          promoByCategory.set(promo.targetId, promo)
+        const catIds = getAllDescendants(promo.targetId)
+        if (!catIds.includes(promo.targetId)) catIds.push(promo.targetId)
+        for (const cid of catIds) {
+          const existing = promoByCategory.get(cid)
+          if (!existing || promo.discountValue > existing.discountValue) {
+            promoByCategory.set(cid, promo)
+          }
         }
       }
     }
@@ -349,16 +407,40 @@ variants: p.variants?.map((v) => ({
 export async function fetchPromoProducts(limit: number = 4): Promise<MedusaProduct[]> {
   try {
     // Get active promotions and all products in parallel
-    const [promotions, allProductsResponse] = await Promise.all([
+    const [promotions, allProductsResponse, categoriesResponse] = await Promise.all([
       fetchActivePromotions(),
-      apiFetchProducts({ limit: 5000, is_active: true }) // Fetch all active products
+      apiFetchProducts({ limit: 5000, is_active: true }), // Fetch all active products
+      apiFetchCategories({ limit: 1000 }),
     ])
 
     if (!promotions.length || !allProductsResponse.data.length) {
       return []
     }
 
-    // Build maps for quick lookup
+    // Build category children map for descendant resolution
+    const flatCategories = (categoriesResponse && (categoriesResponse as any).data) || []
+    const childrenMap = new Map<string, string[]>()
+    for (const c of flatCategories) {
+      const parentId = c.parent_id || c.parent_category_id || null
+      if (parentId) {
+        if (!childrenMap.has(parentId)) childrenMap.set(parentId, [])
+        childrenMap.get(parentId)!.push(c.id)
+      }
+    }
+    const getAllDescendants = (startId: string) => {
+      const result = new Set<string>()
+      const stack = [startId]
+      while (stack.length) {
+        const cur = stack.pop()!
+        if (result.has(cur)) continue
+        result.add(cur)
+        const children = childrenMap.get(cur) || []
+        for (const ch of children) stack.push(ch)
+      }
+      return Array.from(result)
+    }
+
+    // Build maps for quick lookup (apply category promos to descendants)
     const promoByProduct = new Map<string, ActivePromotion>()
     const promoByCategory = new Map<string, ActivePromotion>()
 
@@ -366,9 +448,13 @@ export async function fetchPromoProducts(limit: number = 4): Promise<MedusaProdu
       if (promo.targetType === 'product') {
         promoByProduct.set(promo.targetId, promo)
       } else if (promo.targetType === 'category') {
-        const existing = promoByCategory.get(promo.targetId)
-        if (!existing || promo.discountValue > existing.discountValue) {
-          promoByCategory.set(promo.targetId, promo)
+        const catIds = getAllDescendants(promo.targetId)
+        if (!catIds.includes(promo.targetId)) catIds.push(promo.targetId)
+        for (const cid of catIds) {
+          const existing = promoByCategory.get(cid)
+          if (!existing || promo.discountValue > existing.discountValue) {
+            promoByCategory.set(cid, promo)
+          }
         }
       }
     }
