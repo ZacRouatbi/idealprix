@@ -57,7 +57,8 @@
 
 @layer components {
   .content-container {
-    @apply max-w-[1440px] w-full mx-auto px-6;
+    /* Responsive container: full width on very small screens, then constrained widths at breakpoints */
+    @apply max-w-full sm:max-w-[1024px] md:max-w-[1280px] lg:max-w-[1440px] w-full mx-auto px-4 sm:px-6;
   }
 
   .contrast-btn {
@@ -114,5 +115,35 @@
 
   .text-3xl-semi {
     @apply text-[32px] leading-[44px] font-semibold;
+  }
+}
+
+/* Global responsive utilities: ensure media and tables scale on small screens */
+@layer base {
+  img, picture, video, canvas, svg {
+    @apply max-w-full h-auto block;
+  }
+
+  table {
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+  }
+
+  pre, code {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+@layer components {
+  /* Make form controls full width on very small screens, but revert to auto on sm+ */
+  input, textarea, select, button {
+    @apply w-full sm:w-auto;
+  }
+
+  /* Ensure media inside content container scales */
+  .content-container img, .content-container video {
+    @apply max-w-full h-auto;
   }
 }

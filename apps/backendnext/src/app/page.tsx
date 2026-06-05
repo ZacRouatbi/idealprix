@@ -117,22 +117,23 @@ export default async function DashboardPage() {
         />
       </div>
       
-      <div className="flex-1 space-y-6 px-8">
-        <div className="flex items-center justify-between">
+      <div className="flex-1 space-y-6 px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h2>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Welcome back! Here's your business overview.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline">
-              <Calendar className="mr-2 h-4 w-4" />
-              Last 30 days
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Last 30 days</span>
+              <span className="sm:hidden">30d</span>
             </Button>
-            <Button asChild>
+            <Button asChild size="sm" className="text-xs sm:text-sm">
               <a href="/api/dashboard/export" download>
-                <Download className="mr-2 h-4 w-4" />
+                <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 Export
               </a>
             </Button>
@@ -140,7 +141,7 @@ export default async function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 p-8">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 px-4 sm:px-6 lg:px-8 pt-6">
         <MetricsCard
           title="Total Revenue"
           value={`${data.totalRevenue.toLocaleString('fr-TN')} TND`}
@@ -167,7 +168,7 @@ export default async function DashboardPage() {
         />
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2 p-8">
+      <div className="grid gap-6 md:grid-cols-2 mt-6 px-4 sm:px-6 lg:px-8">
         <RecentOrders orders={data.recentOrders} />
         <RecentActivity activities={data.recentActivities} />
       </div>

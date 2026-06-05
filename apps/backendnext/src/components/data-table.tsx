@@ -44,19 +44,20 @@ function getChildContext<TData>(child: TData, col: any): any {
 }
 
 export function DataTable<TData = Category, TValue = any>({
-  columns,
-  data,
-  pageSize = 10,
-  pageCount = 0,
-  currentPage = 0,
-  onPageChange,
-  onDelete,
-  getChildren,
-  onRowClick,
-}: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+   columns,
+   data,
+   pageSize = 10,
+   pageCount = 0,
+   currentPage = 0,
+   onPageChange,
+   onDelete,
+   getChildren,
+   onRowClick,
+ }: DataTableProps<TData, TValue>) {
+   const [sorting, setSorting] = useState<SortingState>([])
+   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+   const [loadingPage, setLoadingPage] = useState<number | null>(null)
 
   const table = useReactTable({
     data,
@@ -81,9 +82,10 @@ export function DataTable<TData = Category, TValue = any>({
 
   const totalPages = pageCount || 1
 
-  return (
-      <div className="space-y-4">
-        <div className="overflow-x-auto rounded-lg border">
+return (
+    <div className="space-y-4">
+      <div className="overflow-x-auto rounded-lg border">
+        <div className="min-w-[640px] sm:min-w-0">
           <table className="w-full">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -182,48 +184,72 @@ export function DataTable<TData = Category, TValue = any>({
             </tbody>
           </table>
         </div>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              Page {currentPage + 1} of {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange?.(0)}
-                disabled={currentPage === 0}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange?.(currentPage - 1)}
-                disabled={currentPage === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange?.(currentPage + 1)}
-                disabled={currentPage >= totalPages - 1}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange?.(totalPages - 1)}
-                disabled={currentPage >= totalPages - 1}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
-    )
-  }
+
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            Page {currentPage + 1} of {totalPages}
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(0)}
+              disabled={currentPage === 0}
+              className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+            >
+              <ChevronsLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(currentPage - 1)}
+              disabled={currentPage === 0}
+              className="h-7 sm:h-8 px-2"
+            >
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline ml-1">Prev</span>
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map((page) => (
+                <Button
+                  key={page}
+                  variant={page === currentPage + 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onPageChange?.(page - 1)}
+                  disabled={loadingPage === page}
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                >
+                  {loadingPage === page ? "..." : page}
+                </Button>
+              ))}
+              {totalPages > 5 && (
+                <span className="text-xs text-muted-foreground">...</span>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="h-7 sm:h-8 px-2"
+            >
+              <span className="hidden sm:inline mr-1">Next</span>
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(totalPages - 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+            >
+              <ChevronsRight className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

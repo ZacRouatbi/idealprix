@@ -82,11 +82,20 @@ export default function HomePage() {
     if (categories.length > 0) fetchCounts();
   }, [categories, allCategoryIds]);
 
+  const CATEGORY_IMAGES: Record<string, string> = {
+    nettoyage: "https://images.unsplash.com/photo-1581574209811-9f8b7d3c0b7b?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=1c4b1d1b9c9f1b2e3f4a5a6b7c8d9e0f",
+    cosmetiques: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d",
+    vaisselle: "https://images.unsplash.com/photo-1541818056-9d3b6f9b3d1e?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e",
+    boissons: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f",
+    epicerie: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a",
+    bricolage: "https://images.unsplash.com/photo-1556817411-31ae72fa3ea0?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
+  };
+
   const enrichedCategories = categories.map((cat) => ({
     id: cat.id,
     title: cat.name,
     handle: cat.handle,
-    image: cat.image?.url || HERO_IMAGE,
+    image: cat.image?.url || CATEGORY_IMAGES[cat.handle] || HERO_IMAGE,
     count: counts[cat.handle] || 0,
   }));
   
@@ -111,11 +120,9 @@ export default function HomePage() {
               Découvrir maintenant <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="flex-1 flex justify-center">
-            <div className="relative w-full max-w-sm lg:max-w-md">
-              <img src={HERO_IMAGE} alt="Produits" className="w-full h-72 lg:h-80 object-cover rounded-2xl shadow-lg" />
-            </div>
-          </div>
+<div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto">
+               <img src={HERO_IMAGE} alt="Produits" className="w-full h-64 sm:h-72 lg:h-80 object-cover rounded-2xl shadow-lg" />
+             </div>
         </div>
       </section>
 
@@ -158,9 +165,9 @@ export default function HomePage() {
               <Loader2 className="w-7 h-7 text-[#D4302A] animate-spin" />
             </div>
           ) : popularProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {popularProducts.map((p) => <ProductCard key={p.id} product={p} />)}
-            </div>
+<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+               {popularProducts.map((p) => <ProductCard key={p.id} product={p} />)}
+             </div>
           ) : (
             <p className="text-center text-[#717182] py-8">Aucun produit disponible pour l'instant.</p>
           )}
@@ -201,7 +208,7 @@ export default function HomePage() {
           >
             Nos services et garanties
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
               { icon: "🚚", title: "Livraison rapide", desc: "3 à 5 jours ouvrables" },
               { icon: "🔒", title: "Paiement sécurisé", desc: "Vos données sont protégées" },

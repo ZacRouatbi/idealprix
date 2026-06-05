@@ -352,7 +352,7 @@ export default function PromotionsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-6 px-4 sm:px-6 lg:px-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -446,7 +446,7 @@ export default function PromotionsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Discount Type</label>
-<Select
+                <Select
                   value={promoCodeData.discountType}
                   onChange={(e) => setPromoCodeData({ ...promoCodeData, discountType: e.target.value as "percentage" | "fixed" })}
                 >
@@ -532,49 +532,51 @@ export default function PromotionsPage() {
           <CardContent>
             <div className="space-y-4">
               <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full">
-                  <thead>
-                    {promotionsTable.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} className="border-b bg-muted/50">
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="p-4 text-left align-middle font-medium"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : typeof header.column.columnDef.header === 'function'
-                                ? header.column.columnDef.header(header.getContext())
-                                : header.column.columnDef.header}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {promotionsTable.getRowModel().rows?.length ? (
-                      promotionsTable.getRowModel().rows.map((row) => (
-                        <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
-                          {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="p-4 align-middle">
-                              {typeof cell.column.columnDef.cell === 'function'
-                                ? cell.column.columnDef.cell(cell.getContext())
-                                : cell.column.columnDef.cell}
-                            </td>
+                <div className="min-w-[640px] sm:min-w-0">
+                  <table className="w-full">
+                    <thead>
+                      {promotionsTable.getHeaderGroups().map((headerGroup) => (
+                        <tr key={headerGroup.id} className="border-b bg-muted/50">
+                          {headerGroup.headers.map((header) => (
+                            <th
+                              key={header.id}
+                              className="p-4 text-left align-middle font-medium"
+                            >
+                              {header.isPlaceholder
+                                ? null
+                                : typeof header.column.columnDef.header === 'function'
+                                  ? header.column.columnDef.header(header.getContext())
+                                  : header.column.columnDef.header}
+                            </th>
                           ))}
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={promotionColumns().length} className="p-8 text-center">
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="text-muted-foreground">No promotions found</div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      ))}
+                    </thead>
+                    <tbody>
+                      {promotionsTable.getRowModel().rows?.length ? (
+                        promotionsTable.getRowModel().rows.map((row) => (
+                          <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className="p-4 align-middle">
+                                {typeof cell.column.columnDef.cell === 'function'
+                                  ? cell.column.columnDef.cell(cell.getContext())
+                                  : cell.column.columnDef.cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={promotionColumns().length} className="p-8 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="text-muted-foreground">No promotions found</div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -599,49 +601,51 @@ export default function PromotionsPage() {
                 />
               </div>
               <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full">
-                  <thead>
-                    {promoCodesTable.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} className="border-b bg-muted/50">
-                        {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="p-4 text-left align-middle font-medium"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : typeof header.column.columnDef.header === 'function'
-                                ? header.column.columnDef.header(header.getContext())
-                                : header.column.columnDef.header}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {promoCodesTable.getRowModel().rows?.length ? (
-                      promoCodesTable.getRowModel().rows.map((row) => (
-                        <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
-                          {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="p-4 align-middle">
-                              {typeof cell.column.columnDef.cell === 'function'
-                                ? cell.column.columnDef.cell(cell.getContext())
-                                : cell.column.columnDef.cell}
-                            </td>
+                <div className="min-w-[640px] sm:min-w-0">
+                  <table className="w-full">
+                    <thead>
+                      {promoCodesTable.getHeaderGroups().map((headerGroup) => (
+                        <tr key={headerGroup.id} className="border-b bg-muted/50">
+                          {headerGroup.headers.map((header) => (
+                            <th
+                              key={header.id}
+                              className="p-4 text-left align-middle font-medium"
+                            >
+                              {header.isPlaceholder
+                                ? null
+                                : typeof header.column.columnDef.header === 'function'
+                                  ? header.column.columnDef.header(header.getContext())
+                                  : header.column.columnDef.header}
+                            </th>
                           ))}
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={promoCodeColumns().length} className="p-8 text-center">
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="text-muted-foreground">No promo codes found</div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      ))}
+                    </thead>
+                    <tbody>
+                      {promoCodesTable.getRowModel().rows?.length ? (
+                        promoCodesTable.getRowModel().rows.map((row) => (
+                          <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className="p-4 align-middle">
+                                {typeof cell.column.columnDef.cell === 'function'
+                                  ? cell.column.columnDef.cell(cell.getContext())
+                                  : cell.column.columnDef.cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={promoCodeColumns().length} className="p-8 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="text-muted-foreground">No promo codes found</div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </CardContent>

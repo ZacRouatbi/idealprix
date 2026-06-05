@@ -23,14 +23,18 @@ interface SalesChartProps {
 
 export function SalesChart({ data = defaultData }: SalesChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip formatter={(value: number) => [`${value.toLocaleString('fr-TN')} TND`, 'Revenue']} />
-        <Line type="monotone" dataKey="total" stroke="#1E40AF" strokeWidth={2} />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="w-full overflow-x-auto">
+      <div className="min-w-[300px] sm:min-w-0">
+        <ResponsiveContainer width="100%" height={250} className="sm:h-[350px]">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip formatter={(value: number) => [`${value.toLocaleString('fr-TN')} TND`, 'Revenue']} />
+            <Line type="monotone" dataKey="total" stroke="#1E40AF" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 }

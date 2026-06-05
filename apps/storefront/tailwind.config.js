@@ -53,6 +53,12 @@ module.exports = {
         large: "1440px",
         xlarge: "1680px",
         "2xlarge": "1920px",
+        // Standard aliases for common Tailwind utilities (sm/md/lg/xl/2xl)
+        sm: "512px",
+        md: "1024px",
+        lg: "1280px",
+        xl: "1440px",
+        "2xl": "1680px",
       },
       fontSize: {
         "3xl": "2rem",

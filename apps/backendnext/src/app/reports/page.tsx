@@ -74,27 +74,25 @@ export default async function ReportsPage() {
   const productData = await getProductSalesData()
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Reports</h2>
-        <div className="flex items-center gap-2">
-          <Button asChild>
-            <a href="/api/reports/export" download>
-              <Download className="h-4 w-4 mr-2" />
-              Export All to PDF
-            </a>
-          </Button>
-        </div>
+    <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports</h2>
+        <Button size="sm" asChild>
+          <a href="/api/reports/export" download>
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            Export All
+          </a>
+        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold">
               {(stats?.totalRevenue || 0).toLocaleString("fr-TN")} TND
             </div>
             <p className="text-xs text-muted-foreground">
@@ -105,36 +103,36 @@ export default async function ReportsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Orders</CardTitle>
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stats?.totalOrders || 0}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Products</CardTitle>
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalProducts || 0}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stats?.totalProducts || 0}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Customers</CardTitle>
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalCustomers || 0}</div>
+            <div className="text-xl sm:text-2xl font-bold">{stats?.totalCustomers || 0}</div>
           </CardContent>
         </Card>
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         <ReportCard
           title="Sales Report"
           description="View and analyze your sales performance"
@@ -178,33 +176,30 @@ export default async function ReportsPage() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Sales Overview</CardTitle>
-            <CardDescription>
-              Daily sales for the selected period
-            </CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Sales Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-48 sm:h-64">
               {salesData.length > 0 ? (
                 <div className="w-full space-y-2">
                   {salesData.slice(0, 7).map((item) => (
                     <div key={item.date} className="flex items-center gap-2">
                       <span className="text-xs w-20">{item.date}</span>
-                      <div className="flex-1 bg-gray-200 rounded-full h-4">
+                      <div className="flex-1 bg-gray-200 rounded-full h-3 sm:h-4">
                         <div 
-                          className="bg-primary h-4 rounded-full"
+                          className="bg-primary h-3 sm:h-4 rounded-full"
                           style={{ width: `${Math.min(100, item.orders * 10)}%` }}
                         />
                       </div>
-                      <span className="text-xs w-16">{item.orders} orders</span>
+                      <span className="text-xs w-12 sm:w-16">{item.orders}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No sales data available</p>
+                <p className="text-muted-foreground text-xs sm:text-sm">No sales data available</p>
               )}
             </div>
           </CardContent>
@@ -212,27 +207,24 @@ export default async function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Product Performance</CardTitle>
-            <CardDescription>
-              Top products by sales volume
-            </CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Product Performance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 overflow-y-auto">
+            <div className="h-48 sm:h-64 overflow-y-auto">
               {productData.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {productData.map((item, i) => (
                     <div key={item.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{i + 1}.</span>
-                        <span className="text-sm">{item.name}</span>
+                        <span className="text-xs sm:text-sm font-medium">{i + 1}.</span>
+                        <span className="text-xs sm:text-sm">{item.name}</span>
                       </div>
-                      <span className="text-sm text-muted-foreground">{item.sales} sold</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">{item.sales} sold</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No product data available</p>
+                <p className="text-muted-foreground text-xs sm:text-sm">No product data available</p>
               )}
             </div>
           </CardContent>
@@ -241,24 +233,21 @@ export default async function ReportsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Inventory Status</CardTitle>
-          <CardDescription>
-            Current stock levels and alerts
-          </CardDescription>
+          <CardTitle className="text-lg sm:text-xl">Inventory Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold">{stats?.totalInventory || 0}</div>
-              <p className="text-sm text-muted-foreground">Total Items</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold">{stats?.totalInventory || 0}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Total Items</p>
             </div>
-            <div className="text-center p-4 bg-amber-50 rounded-lg">
-              <div className="text-2xl font-bold text-amber-600">{stats?.lowStockCount || 0}</div>
-              <p className="text-sm text-muted-foreground">Low Stock Items</p>
+            <div className="text-center p-3 sm:p-4 bg-amber-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-amber-600">{stats?.lowStockCount || 0}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Low Stock Items</p>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{stats?.totalCategories || 0}</div>
-              <p className="text-sm text-muted-foreground">Categories</p>
+            <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{stats?.totalCategories || 0}</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Categories</p>
             </div>
           </div>
         </CardContent>
@@ -281,17 +270,17 @@ function ReportCard({
   return (
     <Card className="cursor-pointer hover:shadow-lg transition-shadow">
       <CardHeader>
-        <Icon className="h-8 w-8 text-primary mb-2" />
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
+        <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary mb-2" />
+        <CardTitle className="text-sm sm:text-base">{title}</CardTitle>
+        <CardDescription className="text-xs">
           {description}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button variant="outline" size="sm" asChild>
+        <Button variant="outline" size="sm" asChild className="text-xs sm:text-sm">
           <a href={href} download>
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            Export
           </a>
         </Button>
       </CardContent>

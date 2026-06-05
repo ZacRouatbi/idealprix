@@ -74,7 +74,7 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-6 p-8 pt-6">
+      <div className="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8 pt-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="h-24 bg-muted rounded animate-pulse" />
           <div className="h-24 bg-muted rounded animate-pulse" />
@@ -87,8 +87,8 @@ export default function AnalyticsPage() {
 
   if (error) {
     return (
-      <div className="flex-1 space-y-6 p-8 pt-6">
-        <p className="text-destructive">Failed to load analytics data</p>
+      <div className="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8 pt-6">
+        <p className="text-destructive text-sm sm:text-base">Failed to load analytics data</p>
       </div>
     )
   }
@@ -97,28 +97,29 @@ export default function AnalyticsPage() {
   const totalOrders = data?.totalOrders || 0
   const avgOrderValue = totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : "0"
 
-  return (
-    <div className="flex-1 space-y-6 p-8 pt-6">
-      <div className="flex items-center justify-between">
+return (
+    <div className="flex-1 space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Deep insights into your business performance
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <Calendar className="mr-2 h-4 w-4" />
-            Last 30 days
+          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+            <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Last 30 days</span>
+            <span className="sm:hidden">30d</span>
           </Button>
-          <Button onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
+          <Button size="sm" onClick={handleExport} className="text-xs sm:text-sm">
+            <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Export
           </Button>
         </div>
       </div>
-      
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+       
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricsCard
           title="Total Revenue"
           value={`${totalRevenue.toLocaleString('fr-TN')} TND`}
@@ -144,8 +145,8 @@ export default function AnalyticsPage() {
           trendDirection="down"
         />
       </div>
-      
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+       
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>Sales Overview</CardTitle>
@@ -159,7 +160,7 @@ export default function AnalyticsPage() {
         </Card>
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Order Status Distribution</CardTitle>
+            <CardTitle>Order Status</CardTitle>
             <CardDescription>Current order status breakdown</CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,7 +168,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-      
+       
       <Card>
         <CardHeader>
           <CardTitle>Revenue by Category</CardTitle>

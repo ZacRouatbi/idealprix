@@ -35,24 +35,25 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/store': {
+      // Use trailing slashes to avoid accidentally proxying frontend routes like /stores
+      '/store/': {
         target: 'http://localhost:9000',
         changeOrigin: true,
         secure: false,
       },
-      '/auth': {
+      '/auth/': {
         target: 'http://localhost:9000',
         changeOrigin: true,
         secure: false,
       },
       // Proxy backendnext API routes
-      '/api/public': {
+      '/api/public/': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
       },
       // Proxy OPTIONS requests for CORS preflight
-      '/api': {
+      '/api/': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,

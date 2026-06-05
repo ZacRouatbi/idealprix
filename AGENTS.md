@@ -38,3 +38,15 @@ cd apps/backendnext && node scripts/test-db.js
 - All admin API routes require valid JWT token
 - Public API routes (/api/public/*) are rate-limited but require no auth
 - Role hierarchy: admin > manager > staff > customer
+
+## Progress
+
+### Done
+- Fixed RecentActivity component typo (recentsActivities → recentActivities)
+- Simplified RecentOrders and RecentActivity table overflow handling (removed redundant wrapper div and overflow classes - Table component already handles overflow)
+
+### In Progress
+- (none)
+
+### Blocked
+- (none)

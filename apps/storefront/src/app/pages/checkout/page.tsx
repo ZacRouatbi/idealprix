@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Check,
   Truck,
-  Zap,
   Shield,
   CreditCard,
   ChevronDown,
@@ -104,8 +103,8 @@ export default function CheckoutPage() {
       setAddress(prev => ({
         ...prev,
         fullName: customer.first_name && customer.last_name 
-          ? `${customer.first_name} ${customer.last_name}` 
-          : customer.first_name || prev.fullName,
+            ? `${customer.first_name} ${customer.last_name}` 
+            : customer.first_name || prev.fullName,
         phone: customer.phone || prev.phone,
         email: customer.email || prev.email,
       }));
@@ -200,12 +199,12 @@ export default function CheckoutPage() {
 
   if (cart.items.length === 0 && !orderPlaced) {
     return (
-      <div className="min-h-screen bg-[#F0F3FA] flex items-center justify-center px-4">
-        <div className="text-center">
-          <p className="text-[#717182] mb-4">Your cart is empty.</p>
+      <div className="min-h-screen bg-[#F0F3FA] flex items-center justify-center px-3 sm:px-4">
+        <div className="text-center max-w-xs sm:max-w-sm">
+          <p className="text-[#717182] mb-3 sm:mb-4 text-xs sm:text-sm">Your cart is empty.</p>
           <Link
             to="/products"
-            className="bg-[#D4302A] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b82a22] transition-colors"
+            className="bg-[#D4302A] text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#b82a22] transition-colors"
             style={{ fontFamily: "Poppins, sans-serif" }}
           >
             Shop Products
@@ -217,30 +216,30 @@ export default function CheckoutPage() {
 
   if (orderPlaced) {
     return (
-      <div className="min-h-screen bg-[#F9F8F7] flex items-center justify-center px-4">
-        <div className="text-center max-w-sm">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
-            <Check className="w-10 h-10 text-green-500" />
+      <div className="min-h-screen bg-[#F9F8F7] flex items-center justify-center px-3 sm:px-4">
+        <div className="text-center max-w-xs sm:max-w-sm px-2">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-5">
+            <Check className="w-7 h-7 sm:w-9 sm:h-9 text-green-500" />
           </div>
           <h2
-            className="text-[#1E1E1E] mb-2"
-            style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.5rem", fontWeight: 700 }}
+            className="text-[#1E1E1E] mb-1.5 sm:mb-2 text-lg sm:text-xl"
+            style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700 }}
           >
             Order Confirmed!
           </h2>
           {placedOrderId && (
-            <p className="text-xs text-[#717182] mb-1">
+            <p className="text-[10px] sm:text-xs text-[#717182] mb-1">
               Order #: <span className="font-mono">{placedOrderId}</span>
             </p>
           )}
-          <p className="text-[#717182] text-sm mb-4">
+          <p className="text-[#717182] text-xs sm:text-sm mb-3 sm:mb-4">
             {paymentMethod === "cod" 
               ? "You will pay cash on delivery." 
               : "Your online payment has been processed."}
           </p>
           <button
             onClick={() => navigate("/")}
-            className="bg-[#D4302A] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#b82a22] transition-colors"
+            className="bg-[#D4302A] text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#b82a22] transition-colors"
             style={{ fontFamily: "Poppins, sans-serif" }}
           >
             Back to Home
@@ -252,32 +251,31 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#F9F8F7]" style={{ fontFamily: "Inter, sans-serif" }}>
-      <div className="max-w-5xl mx-auto px-4 py-6">
-
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm text-[#717182] mb-5">
+        <nav className="flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm text-[#717182] mb-3 sm:mb-5">
           <Link to="/" className="hover:text-[#D4302A]">Home</Link>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           <Link to="/cart" className="hover:text-[#D4302A]">Cart</Link>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           <span className="text-[#1E1E1E] font-medium">Checkout</span>
         </nav>
 
         {/* Title */}
         <h1
-          className="text-[#1E1E1E] mb-6"
-          style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.5rem", fontWeight: 700 }}
+          className="text-[#1E1E1E] mb-4 sm:mb-6 text-lg sm:text-2xl"
+          style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700 }}
         >
           Checkout
         </h1>
 
         {/* Step Indicator */}
-        <div className="flex items-center mb-8">
+        <div className="flex items-center mb-5 sm:mb-8 overflow-x-auto pb-2">
           {steps.map((step, idx) => (
-            <div key={step.n} className="flex items-center">
+            <div key={step.n} className="flex items-center flex-shrink-0">
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-colors ${
                     currentStep > step.n
                       ? "bg-green-500 text-white"
                       : currentStep === step.n
@@ -285,10 +283,10 @@ export default function CheckoutPage() {
                       : "bg-[#E5E5E5] text-[#717182]"
                   }`}
                 >
-                  {currentStep > step.n ? <Check className="w-4 h-4" /> : step.n}
+                  {currentStep > step.n ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : step.n}
                 </div>
                 <span
-                  className={`text-xs mt-1 font-medium ${
+                  className={`text-[10px] sm:text-xs mt-0.5 sm:mt-1 font-medium ${
                     currentStep === step.n ? "text-[#D4302A]"
                     : currentStep > step.n ? "text-green-500"
                     : "text-[#717182]"
@@ -300,10 +298,10 @@ export default function CheckoutPage() {
               </div>
               {idx < steps.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-3 mb-4 transition-colors ${
+                  className={`flex-1 h-0.5 mx-2 sm:mx-3 mb-3 sm:mb-4 transition-colors ${
                     currentStep > step.n ? "bg-green-500" : "bg-[#E5E5E5]"
                   }`}
-                  style={{ minWidth: "3rem" }}
+                  style={{ minWidth: "2rem" }}
                 />
               )}
             </div>
@@ -312,85 +310,95 @@ export default function CheckoutPage() {
 
         {/* Global error */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+          <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-xl text-xs sm:text-sm text-red-600">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        {/* Mobile order summary - shown before steps on mobile */}
+        <div className="lg:hidden mb-3 sm:mb-4">
+          <div className="bg-white rounded-xl border border-[#E5E5E5] p-3 sm:p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs sm:text-sm font-medium text-[#717182]">Total</span>
+              <span className="font-bold text-[#1E1E1E] text-xs sm:text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>
+                {formatPrice(total)}
+              </span>
+            </div>
+          </div>
+        </div>
 
-          {/* ─── Left panel ─── */}
-          <div className="flex-1">
-
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+          {/* Left panel */}
+          <div className="flex-1 min-w-0">
             {/* Step 1: Address */}
             {currentStep === 1 && (
-              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
-                <h2 className="font-semibold text-[#1E1E1E] mb-5" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1rem" }}>
+              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-3.5 sm:p-4 lg:p-6">
+                <h2 className="font-semibold text-[#1E1E1E] mb-4 sm:mb-5 text-sm sm:text-base" style={{ fontFamily: "Poppins, sans-serif" }}>
                   Delivery Information
                 </h2>
-                <form onSubmit={handleAddressSubmit} className="space-y-4">
+                <form onSubmit={handleAddressSubmit} className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#1E1E1E] mb-1.5">Full Name</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#1E1E1E] mb-1">Full Name</label>
                     <input type="text" required value={address.fullName}
                       onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
                       placeholder="First Last"
-                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
+                      className="w-full border border-[#E5E5E5] rounded-lg px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#1E1E1E] mb-1.5">Phone</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#1E1E1E] mb-1">Phone</label>
                     <input type="tel" required value={address.phone}
                       onChange={(e) => setAddress({ ...address, phone: e.target.value })}
                       placeholder="+216 XX XXX XXX"
-                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
+                      className="w-full border border-[#E5E5E5] rounded-lg px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#1E1E1E] mb-1.5">Email</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#1E1E1E] mb-1">Email</label>
                     <input type="email" required value={address.email}
                       onChange={(e) => setAddress({ ...address, email: e.target.value })}
                       placeholder="email@example.com"
-                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
+                      className="w-full border border-[#E5E5E5] rounded-lg px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#1E1E1E] mb-1.5">Address</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#1E1E1E] mb-1">Address</label>
                     <input type="text" required value={address.address}
                       onChange={(e) => setAddress({ ...address, address: e.target.value })}
                       placeholder="Street address"
-                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
+                      className="w-full border border-[#E5E5E5] rounded-lg px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-[#1E1E1E] mb-1.5">City</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[#1E1E1E] mb-1">City</label>
                       <div className="relative">
                         <select required value={address.city}
                           onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                          className="w-full appearance-none border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7] cursor-pointer">
+                          className="w-full appearance-none border border-[#E5E5E5] rounded-lg px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7] cursor-pointer">
                           <option value="">Select</option>
                           {TUNISIAN_CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#717182] pointer-events-none" />
+                        <ChevronDown className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#717182] pointer-events-none" />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#1E1E1E] mb-1.5">Postal Code</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[#1E1E1E] mb-1">Postal Code</label>
                       <input type="text" value={address.postalCode}
                         onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
                         placeholder="Postal Code"
-                        className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
+                        className="w-full border border-[#E5E5E5] rounded-lg px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7]" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#717182] mb-1.5">Notes (optional)</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#717182] mb-1">Notes (optional)</label>
                     <textarea value={address.notes}
                       onChange={(e) => setAddress({ ...address, notes: e.target.value })}
-                      placeholder="Additional information..." rows={3}
-                      className="w-full border border-[#E5E5E5] rounded-lg px-3 py-2.5 text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7] resize-none" />
+                      placeholder="Additional information..." rows={2}
+                      className="w-full border border-[#E5E5E5] rounded-lg px-2.5 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-[#1E1E1E] focus:outline-none focus:border-[#D4302A] bg-[#F9F8F7] resize-none" />
                   </div>
                   <button type="submit" disabled={isLoading}
-                    className="w-full bg-[#D4302A] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="w-full bg-[#D4302A] text-white py-2.5 sm:py-3 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     {isLoading
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
-                      : <>Continue to Delivery <ChevronRight className="w-4 h-4" /></>}
+                      ? <><Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> Loading...</>
+                      : <>Continue to Delivery <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></>}
                   </button>
                 </form>
               </div>
@@ -398,18 +406,18 @@ export default function CheckoutPage() {
 
             {/* Step 2: Delivery */}
             {currentStep === 2 && (
-              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
-                <h2 className="font-semibold text-[#1E1E1E] mb-1" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1rem" }}>
+              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-3.5 sm:p-4 lg:p-6">
+                <h2 className="font-semibold text-[#1E1E1E] mb-1 text-sm sm:text-base" style={{ fontFamily: "Poppins, sans-serif" }}>
                   Delivery Method
                 </h2>
-                <p className="text-sm text-[#717182] mb-5">Choose your delivery option</p>
+                <p className="text-xs sm:text-sm text-[#717182] mb-4 sm:mb-5">Choose your delivery option</p>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
                   {shippingProviders.map((provider) => {
                     const Icon = provider.service_type === "pickup" ? Check : Truck;
                     return (
                       <label key={provider.id}
-                        className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-colors ${
                           selectedProviderId === provider.id
                             ? "border-[#D4302A] bg-red-50"
                             : "border-[#E5E5E5] hover:border-[#1E1E1E]"
@@ -417,18 +425,18 @@ export default function CheckoutPage() {
                         <input type="radio" name="delivery" value={provider.id}
                           checked={selectedProviderId === provider.id}
                           onChange={() => setSelectedProviderId(provider.id)}
-                          className="accent-[#D4302A]" />
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          className="accent-[#D4302A] w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
                           selectedProviderId === provider.id ? "bg-[#D4302A] text-white" : "bg-[#F9F8F7] text-[#717182]"
                         }`}>
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                         </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-xs sm:text-sm text-[#1E1E1E] truncate" style={{ fontFamily: "Poppins, sans-serif" }}>
                             {provider.name}
                           </p>
                         </div>
-                        <span className="font-bold text-[#1E1E1E] text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>
+                        <span className="font-bold text-[#1E1E1E] text-xs sm:text-sm whitespace-nowrap" style={{ fontFamily: "Poppins, sans-serif" }}>
                           {provider.price > 0 ? formatPrice(provider.price) : "Free"}
                         </span>
                       </label>
@@ -436,16 +444,16 @@ export default function CheckoutPage() {
                   })}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                   <button onClick={() => setCurrentStep(1)} disabled={isLoading}
-                    className="flex-1 border border-[#E5E5E5] text-[#1E1E1E] py-3 rounded-xl font-semibold text-sm hover:bg-[#F9F8F7] transition-colors disabled:opacity-60"
+                    className="w-full sm:flex-1 border border-[#E5E5E5] text-[#1E1E1E] py-2.5 sm:py-3 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#F9F8F7] transition-colors disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     ← Back
                   </button>
                   <button onClick={() => setCurrentStep(3)} disabled={isLoading || !selectedProviderId}
-                    className="flex-grow bg-[#D4302A] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="w-full sm:flex-1 bg-[#D4302A] text-white py-2.5 sm:py-3 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
-                    <>Continue to Payment <ChevronRight className="w-4 h-4" /></>
+                    <>Continue to Payment <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></>
                   </button>
                 </div>
               </div>
@@ -453,70 +461,70 @@ export default function CheckoutPage() {
 
             {/* Step 3: Payment */}
             {currentStep === 3 && (
-              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
-                <h2 className="font-semibold text-[#1E1E1E] mb-1" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1rem" }}>
+              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-3.5 sm:p-4 lg:p-6">
+                <h2 className="font-semibold text-[#1E1E1E] mb-1 text-sm sm:text-base" style={{ fontFamily: "Poppins, sans-serif" }}>
                   Payment Method
                 </h2>
-                <p className="text-sm text-[#717182] mb-5">
+                <p className="text-xs sm:text-sm text-[#717182] mb-4 sm:mb-5">
                   All transactions are secure and encrypted.
                 </p>
 
                 {/* Payment method options */}
-                <div className="space-y-3 mb-6">
-                  {/* COD — available */}
-                  <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${
+                <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                  {/* COD */}
+                  <label className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-colors ${
                     paymentMethod === "cod" ? "border-[#D4302A] bg-red-50" : "border-[#E5E5E5] hover:border-[#1E1E1E]"
                   }`}>
                     <input type="radio" name="payment" value="cod"
                       checked={paymentMethod === "cod"}
                       onChange={() => setPaymentMethod("cod")}
-                      className="accent-[#D4302A]" />
-                    <span className="text-xl">💵</span>
-                    <div>
-                      <p className="font-semibold text-sm text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                      className="accent-[#D4302A] w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="text-lg sm:text-xl">💵</span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs sm:text-sm text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
                         Payment Upon Delivery
                       </p>
-                      <p className="text-xs text-[#717182]">Pay cash when you receive your order</p>
+                      <p className="text-[10px] sm:text-xs text-[#717182]">Pay cash when you receive your order</p>
                     </div>
                   </label>
 
-                  {/* Online Payment - template */}
-                  <label className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${
+                  {/* Online Payment */}
+                  <label className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-colors ${
                     paymentMethod === "online" ? "border-[#D4302A] bg-red-50" : "border-[#E5E5E5] hover:border-[#1E1E1E]"
                   }`}>
                     <input type="radio" name="payment" value="online"
                       checked={paymentMethod === "online"}
                       onChange={() => setPaymentMethod("online")}
-                      className="accent-[#D4302A]" />
-                    <CreditCard className="w-5 h-5 text-[#D4302A]" />
-                    <div>
-                      <p className="font-semibold text-sm text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                      className="accent-[#D4302A] w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4302A]" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs sm:text-sm text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
                         Online Payment
                       </p>
-                      <p className="text-xs text-[#717182]">Credit/Debit card (coming soon)</p>
+                      <p className="text-[10px] sm:text-xs text-[#717182]">Credit/Debit card (coming soon)</p>
                     </div>
                   </label>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs text-[#717182] mb-5">
-                  <Shield className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-[#717182] mb-3 sm:mb-5">
+                  <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" />
                   <span>Secure payment — your data is protected</span>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                   <button onClick={() => setCurrentStep(2)} disabled={isLoading}
-                    className="flex-1 border border-[#E5E5E5] text-[#1E1E1E] py-3 rounded-xl font-semibold text-sm hover:bg-[#F9F8F7] transition-colors disabled:opacity-60"
+                    className="w-full sm:flex-1 border border-[#E5E5E5] text-[#1E1E1E] py-2.5 sm:py-3 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#F9F8F7] transition-colors disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     ← Back
                   </button>
                   <button
                     onClick={() => setCurrentStep(4)}
                     disabled={isLoading || paymentMethod === "online"}
-                    className="flex-grow bg-[#D4302A] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="w-full sm:flex-1 bg-[#D4302A] text-white py-2.5 sm:py-3 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     {paymentMethod === "online"
                       ? "Online Payment — coming soon"
-                      : <>Continue to Confirmation <ChevronRight className="w-4 h-4" /></>}
+                      : <>Continue to Confirmation <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></>}
                   </button>
                 </div>
               </div>
@@ -524,92 +532,92 @@ export default function CheckoutPage() {
 
             {/* Step 4: Confirmation */}
             {currentStep === 4 && (
-              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-6">
-                <h2 className="font-semibold text-[#1E1E1E] mb-1" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1rem" }}>
+              <div className="bg-white rounded-2xl border border-[#E5E5E5] p-3.5 sm:p-4 lg:p-6">
+                <h2 className="font-semibold text-[#1E1E1E] mb-1 text-sm sm:text-base" style={{ fontFamily: "Poppins, sans-serif" }}>
                   Order Confirmation
                 </h2>
-                <p className="text-sm text-[#717182] mb-5">
+                <p className="text-xs sm:text-sm text-[#717182] mb-4 sm:mb-5">
                   Review your information before placing the order.
                 </p>
 
-                <div className="space-y-4 mb-6">
+                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                   <div>
-                    <p className="text-xs font-semibold text-[#717182] uppercase tracking-wider mb-2">Delivery to</p>
-                    <p className="text-sm text-[#1E1E1E]">{address.fullName}</p>
-                    <p className="text-sm text-[#717182]">{address.address}</p>
-                    <p className="text-sm text-[#717182]">{address.city} {address.postalCode}</p>
-                    <p className="text-sm text-[#717182]">{address.phone}</p>
+                    <p className="text-[10px] sm:text-xs font-semibold text-[#717182] uppercase tracking-wider mb-1.5 sm:mb-2">Delivery to</p>
+                    <p className="text-xs sm:text-sm text-[#1E1E1E]">{address.fullName}</p>
+                    <p className="text-xs sm:text-sm text-[#717182]">{address.address}</p>
+                    <p className="text-xs sm:text-sm text-[#717182]">{address.city} {address.postalCode}</p>
+                    <p className="text-xs sm:text-sm text-[#717182]">{address.phone}</p>
                   </div>
 
-                  <div className="border-t border-[#E5E5E5] pt-3">
-                    <p className="text-xs font-semibold text-[#717182] uppercase tracking-wider mb-2">Delivery Method</p>
-                    <p className="text-sm text-[#1E1E1E]">{selectedProvider?.name || "Not selected"}</p>
+                  <div className="border-t border-[#E5E5E5] pt-2 sm:pt-3">
+                    <p className="text-[10px] sm:text-xs font-semibold text-[#717182] uppercase tracking-wider mb-1.5 sm:mb-2">Delivery Method</p>
+                    <p className="text-xs sm:text-sm text-[#1E1E1E]">{selectedProvider?.name || "Not selected"}</p>
                   </div>
 
-                  <div className="border-t border-[#E5E5E5] pt-3">
-                    <p className="text-xs font-semibold text-[#717182] uppercase tracking-wider mb-2">Payment Method</p>
-                    <p className="text-sm text-[#1E1E1E]">
+                  <div className="border-t border-[#E5E5E5] pt-2 sm:pt-3">
+                    <p className="text-[10px] sm:text-xs font-semibold text-[#717182] uppercase tracking-wider mb-1.5 sm:mb-2">Payment Method</p>
+                    <p className="text-xs sm:text-sm text-[#1E1E1E]">
                       {paymentMethod === "cod" ? "Payment Upon Delivery" : "Online Payment"}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-[#717182]">
-                    <Shield className="w-4 h-4 text-green-500" />
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-[#717182]">
+                    <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" />
                     <span>Secure checkout — your data is protected</span>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                   <button onClick={() => setCurrentStep(3)} disabled={isLoading}
-                    className="flex-1 border border-[#E5E5E5] text-[#1E1E1E] py-3 rounded-xl font-semibold text-sm hover:bg-[#F9F8F7] transition-colors disabled:opacity-60"
+                    className="w-full sm:flex-1 border border-[#E5E5E5] text-[#1E1E1E] py-2.5 sm:py-3 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#F9F8F7] transition-colors disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     ← Back
                   </button>
                   <button
                     onClick={handleConfirmOrder}
                     disabled={isLoading}
-                    className="flex-grow bg-[#D4302A] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="w-full sm:flex-1 bg-[#D4302A] text-white py-2.5 sm:py-3 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#b82a22] transition-colors flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-60"
                     style={{ fontFamily: "Poppins, sans-serif" }}>
                     {isLoading
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
-                      : <>Confirm Order <Check className="w-4 h-4" /></>}
+                      ? <><Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> Processing...</>
+                      : <>Confirm Order <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></>}
                   </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* ─── Right: Order Summary ─── */}
-          <div className="lg:w-80 flex-shrink-0">
-            <div className="bg-white rounded-2xl border border-[#E5E5E5] p-5 sticky top-20">
-              <h2 className="font-semibold text-[#1E1E1E] mb-4" style={{ fontFamily: "Poppins, sans-serif" }}>
+          {/* Right: Order Summary */}
+          <div className="lg:w-72 xl:w-80 flex-shrink-0">
+            <div className="bg-white rounded-2xl border border-[#E5E5E5] p-3.5 sm:p-4 lg:p-5 sticky top-4 lg:top-20">
+              <h2 className="font-semibold text-[#1E1E1E] mb-3 sm:mb-4 text-sm sm:text-base" style={{ fontFamily: "Poppins, sans-serif" }}>
                 Order Summary
               </h2>
 
-              <div className="space-y-3 mb-4">
+              <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
                 {cart.items.map(({ product, quantity }) => (
-                  <div key={product.id} className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#F9F8F7] rounded-lg overflow-hidden border border-[#E5E5E5] flex-shrink-0">
+                  <div key={product.id} className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#F9F8F7] rounded-lg overflow-hidden border border-[#E5E5E5] flex-shrink-0">
                       <img src={(product as any).image} alt={product.title} className="w-full h-full object-cover" loading="lazy" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[#1E1E1E] font-medium truncate">{product.title}</p>
-                      <p className="text-xs text-[#717182]">× {quantity}</p>
+                      <p className="text-[10px] sm:text-xs text-[#1E1E1E] font-medium truncate">{product.title}</p>
+                      <p className="text-[10px] sm:text-xs text-[#717182]">× {quantity}</p>
                     </div>
-                    <span className="text-xs font-semibold text-[#1E1E1E] whitespace-nowrap">
+                    <span className="text-[10px] sm:text-xs font-semibold text-[#1E1E1E] whitespace-nowrap">
                       {formatPrice(product.price * quantity)}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-[#E5E5E5] pt-3 space-y-2">
-                <div className="flex justify-between text-sm">
+              <div className="border-t border-[#E5E5E5] pt-2 sm:pt-3 space-y-1.5 sm:space-y-2">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-[#717182]">Subtotal</span>
                   <span className="font-medium text-[#1E1E1E]">{formatPrice(subtotal)}</span>
                 </div>
                 {cart.promoCode && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-[#717182]">
                       Discount ({cart.promoCode.code})
                     </span>
@@ -619,17 +627,17 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 {selectedProvider && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-[#717182]">{selectedProvider.name}</span>
                     <span className="font-medium text-[#1E1E1E]">{selectedProvider.price > 0 ? formatPrice(selectedProvider.price) : "Free"}</span>
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-[#E5E5E5] mt-3 pt-3">
+              <div className="border-t border-[#E5E5E5] mt-2 sm:mt-3 pt-2 sm:pt-3">
                 <div className="flex justify-between">
-                  <span className="font-semibold text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>Total</span>
-                  <span className="font-bold text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif", fontSize: "1.1rem" }}>
+                  <span className="font-semibold text-[#1E1E1E] text-xs sm:text-sm" style={{ fontFamily: "Poppins, sans-serif" }}>Total</span>
+                  <span className="font-bold text-[#1E1E1E]" style={{ fontFamily: "Poppins, sans-serif" }}>
                     {formatPrice(total)}
                   </span>
                 </div>

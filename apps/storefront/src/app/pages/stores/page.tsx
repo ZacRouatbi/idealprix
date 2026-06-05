@@ -1,14 +1,12 @@
 import { Link } from "react-router";
+import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
+// Note: initializing Leaflet icon URLs is done inside a client-only effect in StoresPage to avoid
+// issues when the dev server or SSR tries to evaluate Leaflet on the server.
+
 
 const STORES = [
   {
@@ -57,6 +55,27 @@ function MapController() {
 }
 
 export default function StoresPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    try {
+      // Configure Leaflet default icons on client only
+      // (move this here to avoid evaluating Leaflet on the server/dev prebundle step)
+      // @ts-ignore
+      delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+      });
+    } catch (err) {
+      // fail gracefully in non-browser environments
+      // eslint-disable-next-line no-console
+      console.warn("Leaflet icons initialization skipped:", err);
+    }
+  }, []);
+
   return (
     <main style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="bg-gray-50 min-h-screen">
@@ -79,31 +98,33 @@ export default function StoresPage() {
           {/* Map */}
           <div className="mb-8">
             <div className="bg-white border border-[#E5E5E5] rounded-xl overflow-hidden shadow-sm">
-              <MapContainer
-                center={[35.8, 10.6]}
-                zoom={11}
-                style={{ height: "400px", width: "100%" }}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                <MapController />
-                {STORES.map((store) => (
-                  <Marker
-                    key={store.id}
-                    position={[store.coordinates.lat, store.coordinates.lng]}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <strong>{store.name}</strong>
-                        <br />
-                        {store.address}
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
+              {isClient && (
+                <MapContainer
+                  center={[35.8, 10.6]}
+                  zoom={11}
+                  style={{ height: "400px", width: "100%" }}
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <MapController />
+                  {STORES.map((store) => (
+                    <Marker
+                      key={store.id}
+                      position={[store.coordinates.lat, store.coordinates.lng]}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <strong>{store.name}</strong>
+                          <br />
+                          {store.address}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              )}
             </div>
           </div>
 

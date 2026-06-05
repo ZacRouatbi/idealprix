@@ -134,34 +134,34 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  if (isLoadingProduct) return <div className="p-8">Loading...</div>
+  if (isLoadingProduct) return <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-6">Loading...</div>
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6 overflow-hidden">
+    <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6 overflow-hidden">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg -z-10 animate-pulse"></div>
-        <div className="flex items-center gap-4 mb-4 p-4">
+        <div className="flex items-center gap-4 mb-4 px-4 pb-4">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/products">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
             </Link>
           </Button>
         </div>
-        <h2 className="text-3xl font-bold tracking-tight px-4 pb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
           Edit Product
         </h2>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mx-4 sm:mx-0">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="grid grid-cols-2 gap-8">
+        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:gap-8">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Product Name</Label>
@@ -188,11 +188,11 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
+                  rows={3}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Price (TND)</Label>
                   <Input
@@ -216,7 +216,7 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU</Label>
                   <Input
@@ -261,14 +261,14 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
                 <Label>Product Image</Label>
                 <div className="flex items-center gap-4">
                   {imagePreview && (
-                    <div className="relative w-20 h-20">
-                      <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded" loading="lazy" />
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20">
+                      <img src={imagePreview} alt="Preview" className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded" loading="lazy" />
                       <button
                         type="button"
                         onClick={handleRemoveImage}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                        className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-0.5 sm:p-1"
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       </button>
                     </div>
                   )}
@@ -280,9 +280,9 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
                     className="hidden"
                   />
                   <Label htmlFor="image" className="cursor-pointer">
-                    <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50">
-                      <Upload className="h-4 w-4" />
-                      {imagePreview ? "Change Image" : "Upload Image"}
+                    <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-md hover:bg-gray-50">
+                      <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="text-xs sm:text-sm">{imagePreview ? "Change" : "Upload"}</span>
                     </div>
                   </Label>
                 </div>
@@ -315,7 +315,7 @@ export default function ProductEditPage({ params }: { params: Promise<{ id: stri
           </div>
 
           <div className="flex justify-center pt-4">
-            <Button type="submit" disabled={isLoading} size="lg" className="px-12">
+            <Button type="submit" disabled={isLoading} size="lg" className="px-8 sm:px-12">
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>

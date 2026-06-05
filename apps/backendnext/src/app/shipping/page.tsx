@@ -93,7 +93,7 @@ export default function ShippingPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6">
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-48" />
         </div>
@@ -108,7 +108,7 @@ export default function ShippingPage() {
 
   if (error) {
     return (
-      <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6">
         <Alert variant="destructive">
           <AlertDescription>
             Failed to load shipping providers. Please try again.
@@ -121,21 +121,21 @@ export default function ShippingPage() {
   const shippingData = data?.data || []
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
+    <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Shipping Providers</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Shipping Providers</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Manage delivery options and shipping methods
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button size="sm" onClick={() => setFormOpen(true)}>
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Add Provider
           </Button>
         </div>
@@ -143,12 +143,9 @@ export default function ShippingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Shipping Options</CardTitle>
-          <CardDescription>
-            Configure delivery methods available at checkout
-          </CardDescription>
+          <CardTitle className="text-lg sm:text-xl">Shipping Options</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           <DataTable 
             columns={shippingColumns(handleDelete, undefined)} 
             data={shippingData}
@@ -158,9 +155,9 @@ export default function ShippingPage() {
       </Card>
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-lg mx-2 sm:mx-auto">
           <DialogHeader>
-            <DialogTitle>Add Shipping Provider</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Add Shipping Provider</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -201,10 +198,10 @@ export default function ShippingPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)}>
+            <Button variant="outline" onClick={() => setFormOpen(false)} className="text-xs sm:text-sm">
               Cancel
             </Button>
-            <Button onClick={handleCreate}>
+            <Button onClick={handleCreate} className="text-xs sm:text-sm">
               Create Provider
             </Button>
           </DialogFooter>

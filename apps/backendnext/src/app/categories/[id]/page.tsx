@@ -88,33 +88,33 @@ export default function CategoryEditPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  if (isLoadingCategory) return <div className="p-8">Loading...</div>
+  if (isLoadingCategory) return <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-6">Loading...</div>
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6 overflow-hidden">
+    <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6 overflow-hidden">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg -z-10 animate-pulse"></div>
-        <div className="flex items-center gap-4 mb-4 p-4">
+        <div className="flex items-center gap-4 mb-4 px-4 pb-4">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/categories">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
             </Link>
           </Button>
         </div>
-        <h2 className="text-3xl font-bold tracking-tight px-4 pb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
           Edit Category
         </h2>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mx-4 sm:mx-0">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="h-full overflow-y-auto">
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-md mx-auto space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input
@@ -138,7 +138,7 @@ export default function CategoryEditPage({ params }: { params: Promise<{ id: str
             <Label htmlFor="parent_id">Parent Category (optional)</Label>
             <select
               id="parent_id"
-              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="flex h-9 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               value={categoryParentId || ""}
               onChange={(e) => setCategoryParentId(e.target.value || undefined)}
             >
@@ -149,7 +149,7 @@ export default function CategoryEditPage({ params }: { params: Promise<{ id: str
             </select>
           </div>
 
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </div>

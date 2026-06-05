@@ -80,57 +80,59 @@ export default function InventoryAdjustPage({ params }: { params: Promise<{ id: 
   if (isLoadingItem) return <div className="p-8">Loading...</div>
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6 overflow-hidden">
+    <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6 overflow-hidden">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg -z-10 animate-pulse"></div>
-        <div className="flex items-center gap-4 mb-4 p-4">
+        <div className="flex items-center gap-4 mb-4 px-4 pb-4">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/inventory">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
             </Link>
           </Button>
         </div>
-        <h2 className="text-3xl font-bold tracking-tight px-4 pb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
           Adjust Inventory
         </h2>
       </div>
 
       {item && (
-        <p className="text-muted-foreground">Adjusting stock for {item.product_name}</p>
+        <p className="text-muted-foreground text-sm sm:text-base px-4 sm:px-0">Adjusting stock for {item.product_name}</p>
       )}
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mx-4 sm:mx-0">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="h-full overflow-y-auto">
         <div className="max-w-md mx-auto space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Quantity</Label>
-            <Input
-              id="quantity"
-              type="number"
-              value={adjustAmount}
-              onChange={(e) => setAdjustAmount(parseInt(e.target.value) || 0)}
-              required
-            />
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                type="number"
+                value={adjustAmount}
+                onChange={(e) => setAdjustAmount(parseInt(e.target.value) || 0)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Warehouse A, Shelf 3"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Warehouse A, Shelf 3"
-            />
-          </div>
-
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </div>
