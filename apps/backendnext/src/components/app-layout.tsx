@@ -31,15 +31,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen bg-snow overflow-hidden">
-      <div className="hidden md:flex w-64 flex-col">
+      <div className="hidden lg:flex w-64 flex-col">
         <Sidebar />
       </div>
       
       <div className="flex-1 flex flex-col">
-        <div className="md:hidden">
+        <div className="lg:hidden bg-primary text-primary-foreground w-full">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="m-2">
+              <Button variant="ghost" size="sm" className="m-2 text-primary-foreground">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>

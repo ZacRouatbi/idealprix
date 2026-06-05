@@ -528,8 +528,8 @@ export default function PromotionsPage() {
           <CardContent>
             <div className="space-y-4">
               <div className="overflow-x-auto rounded-lg border">
-                <div className="min-w-[640px] sm:min-w-0">
-                  <table className="w-full">
+                <div className="min-w-[640px] md:min-w-0">
+                  <table className="w-full table-auto">
                     <thead>
                       {promotionsTable.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id} className="border-b bg-muted/50">
@@ -553,7 +553,7 @@ export default function PromotionsPage() {
                         promotionsTable.getRowModel().rows.map((row) => (
                           <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
                             {row.getVisibleCells().map((cell) => (
-                              <td key={cell.id} className="p-4 align-middle">
+                              <td key={cell.id} className="p-4 align-middle whitespace-nowrap md:break-words">
                                 {typeof cell.column.columnDef.cell === 'function'
                                   ? cell.column.columnDef.cell(cell.getContext())
                                   : cell.column.columnDef.cell}
@@ -597,8 +597,8 @@ export default function PromotionsPage() {
                 />
               </div>
               <div className="overflow-x-auto rounded-lg border">
-                <div className="min-w-[640px] sm:min-w-0">
-                  <table className="w-full">
+                <div className="min-w-[640px] md:min-w-0">
+                  <table className="w-full table-auto">
                     <thead>
                       {promoCodesTable.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id} className="border-b bg-muted/50">
@@ -622,7 +622,7 @@ export default function PromotionsPage() {
                         promoCodesTable.getRowModel().rows.map((row) => (
                           <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
                             {row.getVisibleCells().map((cell) => (
-                              <td key={cell.id} className="p-4 align-middle">
+                              <td key={cell.id} className="p-4 align-middle whitespace-nowrap md:break-words">
                                 {typeof cell.column.columnDef.cell === 'function'
                                   ? cell.column.columnDef.cell(cell.getContext())
                                   : cell.column.columnDef.cell}

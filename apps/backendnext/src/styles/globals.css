@@ -95,4 +95,17 @@
   input[type="date"]::-webkit-calendar-picker-indicator {
     @apply opacity-70;
   }
+
+  /* Make tables horizontally scroll on small screens and wrap on md+ */
+  table th,
+  table td {
+    white-space: nowrap;
+  }
+  @media (min-width: 768px) {
+    table th,
+    table td {
+      white-space: normal;
+      word-break: break-word;
+    }
+  }
 }

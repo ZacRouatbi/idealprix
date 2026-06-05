@@ -85,15 +85,15 @@ export function DataTable<TData = Category, TValue = any>({
 return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-lg border">
-        <div className="min-w-[640px] sm:min-w-0">
-          <table className="w-full">
+        <div className="min-w-[640px] md:min-w-0">
+          <table className="w-full table-auto">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id} className="border-b bg-muted/50">
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="p-4 text-left align-middle font-medium"
+                      className="p-4 text-left align-middle font-medium whitespace-nowrap md:break-words"
                     >
                       {header.isPlaceholder
                         ? null
@@ -129,7 +129,7 @@ return (
                         {columns.map((col, colIndex) => {
                           const colKey = col.id ?? `col-${colIndex}`
                           return (
-                            <td key={`${rowId}-${colKey}`} className="p-4 align-middle">
+                            <td key={`${rowId}-${colKey}`} className="p-4 align-middle whitespace-nowrap md:break-words">
                               {flexRender(
                                 col.cell,
                                 {
@@ -156,7 +156,7 @@ return (
                                 {columns.map((col, colIndex) => {
                                   const colKey = col?.id ?? `col-${colIndex}`
                                   return (
-                                    <td key={`${rowId}-${childKey}-${colKey}-${colIndex}`} className="p-4 align-middle" style={{ paddingLeft: colKey === 'name' ? '48px' : undefined }}>
+                                    <td key={`${rowId}-${childKey}-${colKey}-${colIndex}`} className="p-4 align-middle whitespace-nowrap md:break-words" style={{ paddingLeft: colKey === 'name' ? '48px' : undefined }}>
                                       {flexRender(
                                         col.cell as any,
                                         getChildContext(child, col)
@@ -187,7 +187,7 @@ return (
       </div>
 
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 overflow-x-auto">
           <div className="text-xs sm:text-sm text-muted-foreground">
             Page {currentPage + 1} of {totalPages}
           </div>
