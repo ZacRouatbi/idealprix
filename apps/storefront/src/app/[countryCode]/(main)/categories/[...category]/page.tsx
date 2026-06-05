@@ -26,9 +26,7 @@ export async function generateStaticParams() {
     regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
   )
 
-  const categoryHandles = product_categories.map(
-    (category: HttpTypes.StoreProductCategory) => category.handle
-  )
+  const categoryHandles = product_categories.map((category: any) => category.handle)
 
   const staticParams = countryCodes
     ?.map((countryCode: string | undefined) =>
@@ -46,6 +44,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
   try {
     const productCategory = await getCategoryByHandle(params.category)
+
+    if (!productCategory) {
+      notFound()
+    }
 
     const title = productCategory.name + " | Medusa Store"
 
@@ -76,7 +78,7 @@ export default async function CategoryPage(props: Props) {
 
   return (
     <CategoryTemplate
-      category={productCategory}
+      category={productCategory as unknown as HttpTypes.StoreProductCategory}
       sortBy={sortBy}
       page={page}
       countryCode={params.countryCode}

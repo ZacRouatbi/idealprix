@@ -7,7 +7,7 @@ import { categoryColumns } from "@/components/columns/category-columns"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Download, Plus, RefreshCw } from "lucide-react"
+import { Download, Plus } from "lucide-react"
 import { Category } from "@/services/category-service"
 import { exportToPDF } from "@/lib/export-utils"
 
@@ -102,10 +102,6 @@ export default function CategoriesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-3 w-3 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Export</span>

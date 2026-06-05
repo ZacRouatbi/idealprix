@@ -6,7 +6,7 @@ import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { RefreshCw, Download, Mail, Truck, MapPin, User, Package } from "lucide-react"
+import { Download, Mail, Truck, MapPin, User, Package } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { exportToPDF } from "@/lib/export-utils"
 import { Order, OrderWithItems, OrderStatus } from "@/services/order-service"
@@ -179,10 +179,6 @@ export default function OrdersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-3 w-3 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Export PDF</span>

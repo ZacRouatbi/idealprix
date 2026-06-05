@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { productColumns } from "@/components/columns/product-columns"
 import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
-import { Plus, Download, RefreshCw } from "lucide-react"
+import { Plus, Download } from "lucide-react"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -105,10 +105,6 @@ export default function ProductsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-3 w-3 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Export</span>

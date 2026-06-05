@@ -187,7 +187,7 @@ return (
       </div>
 
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
           <div className="text-xs sm:text-sm text-muted-foreground">
             Page {currentPage + 1} of {totalPages}
           </div>

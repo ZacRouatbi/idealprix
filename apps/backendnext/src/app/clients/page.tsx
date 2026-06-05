@@ -6,7 +6,7 @@ import { DataTable } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { RefreshCw, Download, User, Mail, Phone, Calendar, Clock } from "lucide-react"
+import { Download, User, Mail, Phone, Calendar, Clock } from "lucide-react"
 import { exportToPDF } from "@/lib/export-utils"
 import { useState } from "react"
 import {
@@ -83,10 +83,6 @@ export default function ClientsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-3 w-3 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Export</span>

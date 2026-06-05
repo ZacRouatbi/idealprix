@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +21,7 @@ async function getCategories() {
 
 export default function ProductNewPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -80,6 +81,7 @@ export default function ProductNewPage() {
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to create product`)
       }
 
+      queryClient.invalidateQueries({ queryKey: ["products"] })
       router.push("/products")
     } catch (err: any) {
       setError(err.message || "Failed to create product")
@@ -89,31 +91,31 @@ export default function ProductNewPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 px-4 sm:px-6 lg:px-8 pt-6 overflow-hidden">
+    <div className="flex-1 space-y-4 p-8 pt-6 overflow-hidden">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg -z-10 animate-pulse"></div>
-        <div className="flex items-center gap-4 mb-4 px-4 pb-4">
+        <div className="flex items-center gap-4 mb-4 p-4">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/products">
-              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Back</span>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
             </Link>
           </Button>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <h2 className="text-3xl font-bold tracking-tight px-4 pb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
           Add New Product
         </h2>
       </div>
 
       {error && (
-        <Alert variant="destructive" className="mx-4 sm:mx-0">
+        <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <form onSubmit={handleSubmit} className="h-full overflow-y-auto">
-        <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:gap-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="grid grid-cols-2 gap-8">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Product Name</Label>
@@ -141,11 +143,11 @@ export default function ProductNewPage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
+                  rows={4}
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Price (TND)</Label>
                   <Input
@@ -169,7 +171,7 @@ export default function ProductNewPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU</Label>
                   <Input
@@ -214,7 +216,7 @@ export default function ProductNewPage() {
                 <Label>Product Image</Label>
                 <div className="flex items-center gap-4">
                   {imagePreview && (
-                    <img src={imagePreview} alt="Preview" className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded" loading="lazy" />
+                    <img src={imagePreview} alt="Preview" className="w-20 h-20 object-cover rounded" loading="lazy" />
                   )}
                   <Input
                     id="image"
@@ -224,9 +226,9 @@ export default function ProductNewPage() {
                     className="hidden"
                   />
                   <Label htmlFor="image" className="cursor-pointer">
-                    <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border rounded-md hover:bg-gray-50">
-                      <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="text-xs sm:text-sm">Upload Image</span>
+                    <div className="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50">
+                      <Upload className="h-4 w-4" />
+                      Upload Image
                     </div>
                   </Label>
                 </div>
@@ -259,7 +261,7 @@ export default function ProductNewPage() {
           </div>
 
           <div className="flex justify-center pt-4">
-            <Button type="submit" disabled={isLoading} size="lg" className="px-8 sm:px-12">
+            <Button type="submit" disabled={isLoading} size="lg" className="px-12">
               {isLoading ? "Creating..." : "Create Product"}
             </Button>
           </div>

@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectItem } from "@/components/ui/select"
 import { Combobox } from "@/components/ui/combobox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Plus, RefreshCw, Search, Ticket, Tag, Percent, DollarSign } from "lucide-react"
+import { Plus, Search, Ticket, Tag, Percent, DollarSign } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useReactTable, getCoreRowModel, getSortedRowModel, SortingState, ColumnFiltersState, getFilteredRowModel } from "@tanstack/react-table"
@@ -346,10 +346,6 @@ export default function PromotionsPage() {
             Manage discounts and promotional offers
           </p>
         </div>
-        <Button variant="outline" onClick={() => refetchPromotions()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
       </div>
 
       <div className="grid gap-6 px-4 sm:px-6 lg:px-8">

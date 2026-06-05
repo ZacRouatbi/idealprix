@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectItem } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Plus, RefreshCw, Truck, Zap, Store } from "lucide-react"
+import { Plus, Truck, Zap, Store } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -130,10 +130,6 @@ export default function ShippingPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
           <Button size="sm" onClick={() => setFormOpen(true)}>
             <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Add Provider
